@@ -1,13 +1,13 @@
 locals {
   naming = {
     program = var.program
-    pod     = "p${var.pod_id}"
+    squad   = "s${var.squad_id}"
     suffix  = random_string.suffix.result
   }
 
   tags = {
     program     = var.program
-    pod         = local.naming.pod
+    squad       = local.naming.squad
     workshop    = "enterprise-scale-aks-irl"
     cost-center = "training"
     managed-by  = "terraform"
@@ -24,19 +24,19 @@ resource "random_string" "suffix" {
 # ---- Resource groups ----------------------------------------------------------
 
 resource "azurerm_resource_group" "hub" {
-  name     = "${local.naming.program}-${local.naming.pod}-rg-hub-${local.naming.suffix}"
+  name     = "${local.naming.program}-${local.naming.squad}-rg-hub-${local.naming.suffix}"
   location = var.primary_region
   tags     = local.tags
 }
 
 resource "azurerm_resource_group" "primary" {
-  name     = "${local.naming.program}-${local.naming.pod}-rg-eus2-${local.naming.suffix}"
+  name     = "${local.naming.program}-${local.naming.squad}-rg-eus2-${local.naming.suffix}"
   location = var.primary_region
   tags     = local.tags
 }
 
 resource "azurerm_resource_group" "secondary" {
-  name     = "${local.naming.program}-${local.naming.pod}-rg-wus3-${local.naming.suffix}"
+  name     = "${local.naming.program}-${local.naming.squad}-rg-wus3-${local.naming.suffix}"
   location = var.secondary_region
   tags     = local.tags
 }
@@ -121,43 +121,43 @@ module "keyvault_secondary" {
 # ---- AKS clusters ------------------------------------------------------------
 
 module "aks_primary" {
-  source                       = "../../modules/aks"
-  resource_group_name          = azurerm_resource_group.primary.name
-  location                     = var.primary_region
-  region_short                 = "eus2"
-  naming                       = local.naming
-  tags                         = local.tags
-  kubernetes_version           = var.kubernetes_version
-  vnet_subnet_id               = module.network_spoke_primary.aks_subnet_id
-  pod_subnet_id                = null # CNI Overlay
-  log_analytics_workspace_id   = module.observability.log_analytics_workspace_id
-  monitor_workspace_id         = module.observability.monitor_workspace_id
-  grafana_id                   = module.observability.grafana_id
-  acr_id                       = module.acr.id
-  admin_object_ids             = var.admin_object_ids
-  user_pool_min                = var.node_pool_user_min
-  user_pool_max                = var.node_pool_user_max
-  enable_spot_pool             = var.enable_spot_pool
+  source                     = "../../modules/aks"
+  resource_group_name        = azurerm_resource_group.primary.name
+  location                   = var.primary_region
+  region_short               = "eus2"
+  naming                     = local.naming
+  tags                       = local.tags
+  kubernetes_version         = var.kubernetes_version
+  vnet_subnet_id             = module.network_spoke_primary.aks_subnet_id
+  pod_subnet_id              = null # CNI Overlay
+  log_analytics_workspace_id = module.observability.log_analytics_workspace_id
+  monitor_workspace_id       = module.observability.monitor_workspace_id
+  grafana_id                 = module.observability.grafana_id
+  acr_id                     = module.acr.id
+  admin_object_ids           = var.admin_object_ids
+  user_pool_min              = var.node_pool_user_min
+  user_pool_max              = var.node_pool_user_max
+  enable_spot_pool           = var.enable_spot_pool
 }
 
 module "aks_secondary" {
-  source                       = "../../modules/aks"
-  resource_group_name          = azurerm_resource_group.secondary.name
-  location                     = var.secondary_region
-  region_short                 = "wus3"
-  naming                       = local.naming
-  tags                         = local.tags
-  kubernetes_version           = var.kubernetes_version
-  vnet_subnet_id               = module.network_spoke_secondary.aks_subnet_id
-  pod_subnet_id                = null
-  log_analytics_workspace_id   = module.observability.log_analytics_workspace_id
-  monitor_workspace_id         = module.observability.monitor_workspace_id
-  grafana_id                   = module.observability.grafana_id
-  acr_id                       = module.acr.id
-  admin_object_ids             = var.admin_object_ids
-  user_pool_min                = var.node_pool_user_min
-  user_pool_max                = var.node_pool_user_max
-  enable_spot_pool             = false
+  source                     = "../../modules/aks"
+  resource_group_name        = azurerm_resource_group.secondary.name
+  location                   = var.secondary_region
+  region_short               = "wus3"
+  naming                     = local.naming
+  tags                       = local.tags
+  kubernetes_version         = var.kubernetes_version
+  vnet_subnet_id             = module.network_spoke_secondary.aks_subnet_id
+  pod_subnet_id              = null
+  log_analytics_workspace_id = module.observability.log_analytics_workspace_id
+  monitor_workspace_id       = module.observability.monitor_workspace_id
+  grafana_id                 = module.observability.grafana_id
+  acr_id                     = module.acr.id
+  admin_object_ids           = var.admin_object_ids
+  user_pool_min              = var.node_pool_user_min
+  user_pool_max              = var.node_pool_user_max
+  enable_spot_pool           = false
 }
 
 # ---- Front Door --------------------------------------------------------------

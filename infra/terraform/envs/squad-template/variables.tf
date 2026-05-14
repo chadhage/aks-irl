@@ -3,12 +3,12 @@ variable "subscription_id" {
   type        = string
 }
 
-variable "pod_id" {
-  description = "Two-digit pod identifier, e.g. 01, 02."
+variable "squad_id" {
+  description = "Two-digit workshop squad identifier, e.g. 01, 02. (A workshop \"squad\" is a group of 2–3 participants; this is not a Kubernetes Pod.)"
   type        = string
   validation {
-    condition     = can(regex("^[0-9]{2}$", var.pod_id))
-    error_message = "pod_id must be two digits, e.g. 01."
+    condition     = can(regex("^[0-9]{2}$", var.squad_id))
+    error_message = "squad_id must be two digits, e.g. 01."
   }
 }
 

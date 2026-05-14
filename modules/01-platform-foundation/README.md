@@ -21,17 +21,17 @@ terraform apply -var subscription_id=$ARM_SUBSCRIPTION_ID
 ```
 This produces `backend.hcl`. Commit it (it's just storage account refs, no secrets).
 
-## Step 2 — Wire GitHub OIDC (per pod)
+## Step 2 — Wire GitHub OIDC (per squad)
 Create an Entra app and federated credential so `terraform apply` from GitHub Actions can assume an Azure identity **without storing a client secret**:
 
 ```bash
-POD=01
+SQUAD=01
 REPO=your-org/aks-briefing-with-labs
 SUB=$(az account show --query id -o tsv)
 TENANT=$(az account show --query tenantId -o tsv)
 
 # 1. App registration + SP
-APP_ID=$(az ad app create --display-name "sita-pod${POD}-tf" --query appId -o tsv)
+APP_ID=$(az ad app create --display-name "sita-squad${SQUAD}-tf" --query appId -o tsv)
 az ad sp create --id $APP_ID
 SP_OID=$(az ad sp show --id $APP_ID --query id -o tsv)
 
@@ -51,18 +51,18 @@ Add these to GitHub repo secrets (Settings → Secrets and variables → Actions
 - `AZURE_TENANT_ID=$TENANT`
 - `AZURE_SUBSCRIPTION_ID=$SUB`
 
-## Step 3 — Plan & apply your pod
+## Step 3 — Plan & apply your squad
 ```bash
-POD=01
+SQUAD=01
 cd infra/terraform/envs
-cp -r pod-template pod-$POD
-cd pod-$POD
+cp -r squad-template squad-$SQUAD
+cd squad-$SQUAD
 cp terraform.tfvars.example terraform.tfvars
-# edit terraform.tfvars: pod_id, subscription_id, github_repo, admin_object_ids
+# edit terraform.tfvars: squad_id, subscription_id, github_repo, admin_object_ids
 
 terraform init \
   -backend-config=../../bootstrap/backend.hcl \
-  -backend-config="key=pod-$POD.tfstate"
+  -backend-config="key=squad-$SQUAD.tfstate"
 
 terraform plan -out tfplan
 terraform apply tfplan

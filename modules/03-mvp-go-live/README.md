@@ -18,7 +18,7 @@
 ## Step 1 — Build & push the three images
 From the repo root, with `ACR_LOGIN_SERVER` exported (output of Terraform):
 ```bash
-export ACR=$(terraform -chdir=infra/terraform/envs/pod-01 output -raw acr_login_server)
+export ACR=$(terraform -chdir=infra/terraform/envs/squad-01 output -raw acr_login_server)
 az acr login --name ${ACR%%.*}
 
 for app in api-node web-react worker-python; do

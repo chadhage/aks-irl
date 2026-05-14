@@ -44,7 +44,9 @@ It prints a pass/fail line per check. Don't show up Day 1 with red lines.
 
 ## Sandbox quotas (facilitator-only)
 
-Per participant pod (2-3 people), reserve:
+> **Terminology:** "squad" = a group of 2–3 participants sharing one Terraform environment. (Kubernetes Pods, Containers, Nodes, and Clusters are always K8s objects in this repo.)
+
+Per participant squad (2–3 people), reserve:
 
 | Resource | Quantity | Region |
 |---|---|---|
@@ -57,7 +59,7 @@ Per participant pod (2-3 people), reserve:
 | Key Vault | 2 | eastus2 + westus3 |
 | ACR (Premium, zone-redundant) | 1 | eastus2 (geo-replicated to westus3) |
 
-**Total per pod ≈ 40 vCPU**. Order the subscription with **≥ 50 vCPU** in each region to leave headroom for autoscale during chaos labs.
+**Total per squad ≈ 40 vCPU**. Order the subscription with **≥ 50 vCPU** in each region to leave headroom for autoscale during chaos labs.
 
 ### Feature flags / preview registrations
 Run once per subscription:
@@ -75,23 +77,23 @@ az provider register --namespace Microsoft.Cdn
 ```
 
 ### Service principal / OIDC for GitHub Actions
-The facilitator provisions one **per pod** using `infra/terraform/bootstrap/`. See [modules/01-platform-foundation/README.md](modules/01-platform-foundation/README.md).
+The facilitator provisions one **per squad** using `infra/terraform/bootstrap/`. See [modules/01-platform-foundation/README.md](modules/01-platform-foundation/README.md).
 
 ## Naming convention
 
-`{program}-{pod}-{purpose}-{region}-{instance}`
+`{program}-{squad}-{purpose}-{region}-{instance}`
 
 - `program` = `sita`
-- `pod` = `p01`, `p02`, …
+- `squad` = `s01`, `s02`, … (the workshop squad ID — unrelated to Kubernetes Pods)
 - `purpose` = `aks`, `kv`, `acr`, `rg`, `vnet`, …
 - `region` = `eus2`, `wus3`
 - `instance` = 3-char random suffix from Terraform `random_string`
 
 Examples:
-- Primary resource group: `sita-p01-rg-eus2-a1b`
-- AKS cluster: `sita-p01-aks-eus2-a1b`
-- ACR: `sitap01acreus2a1b` (no dashes — ACR limitation)
+- Primary resource group: `sita-s01-rg-eus2-a1b`
+- AKS cluster: `sita-s01-aks-eus2-a1b`
+- ACR: `sitas01acreus2a1b` (no dashes — ACR limitation)
 
 ## Cost guardrails
 
-The full stack costs roughly **\$25–\$40 per pod per day** if left running. Modules include **stop / scale-to-zero** instructions for breaks. Final cleanup is `terraform destroy` at the end of Day 2.
+The full stack costs roughly **\$25–\$40 per squad per day** if left running. Modules include **stop / scale-to-zero** instructions for breaks. Final cleanup is `terraform destroy` at the end of Day 2.

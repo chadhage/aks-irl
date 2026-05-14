@@ -18,8 +18,8 @@ This Terraform deploys the **entire workshop platform** described in [the top-le
 infra/terraform/
 ├── bootstrap/             # one-shot: creates remote-state SA + GH OIDC SP
 ├── envs/
-│   ├── pod-template/      # copy → pod-XX/ for each participant pod
-│   └── pod-01/            # example, committed for reference
+│   ├── squad-template/      # copy → squad-XX/ for each participant squad
+│   └── squad-01/            # example, committed for reference
 ├── modules/
 │   ├── naming/
 │   ├── network-hub/
@@ -39,12 +39,12 @@ infra/terraform/
 cd infra/terraform/bootstrap
 terraform init && terraform apply
 
-# 2. Copy the template for your pod
+# 2. Copy the template for your squad
 cd ../envs
-cp -r pod-template pod-$POD
-cd pod-$POD
+cp -r squad-template squad-$SQUAD
+cd squad-$SQUAD
 
-# 3. Fill in terraform.tfvars (subscription_id, pod_id, github_repo)
+# 3. Fill in terraform.tfvars (subscription_id, squad_id, github_repo)
 $EDITOR terraform.tfvars
 
 # 4. Deploy
@@ -53,7 +53,7 @@ terraform plan -out tfplan
 terraform apply tfplan
 ```
 
-Each `terraform apply` for a fresh pod takes ~25 minutes (Front Door + dual AKS dominate).
+Each `terraform apply` for a fresh squad takes ~25 minutes (Front Door + dual AKS dominate).
 
 ## Module conventions
 

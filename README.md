@@ -2,17 +2,36 @@
 
 > A 2-day, hands-on workshop that takes an AKS practitioner from a **napkin sketch** to a **live customer**, then through A/B testing, deployment rings, surviving intrinsic and extrinsic outages, and finally a knowledge check.
 
-**Audience entry level:** L200 (you've created a cluster, deployed a pod, used `kubectl`).
+**Audience entry level:** L200 (you've created a cluster, deployed a Pod, used `kubectl`).
 **Audience exit level:**
 - 20% → **L400** (can architect a multi-region, ring-gated, observability-rich AKS platform from scratch)
 - 70% → **L300+** (can confidently operate, scale, and remediate an enterprise AKS platform)
 - 10% → high L200 (comfortable extending and operating, with help on advanced topics)
 
+## Terminology — read this first
+
+This workshop uses Kubernetes terms strictly. Wherever you see these words, they mean the Kubernetes object — **not** anything else.
+
+| Term | Means (in this workshop) | NOT |
+|---|---|---|
+| **Pod** | A Kubernetes Pod (one or more containers sharing a network/storage namespace) | A group of participants — we call those **squads** |
+| **Container** | A Kubernetes container running inside a Pod | Azure Container Registry, Azure Container Apps, or a Docker container on your laptop — those are spelled out in full |
+| **Node** | A Kubernetes Node (a VM in an AKS node pool) | Node.js — when we mean the JavaScript runtime, we say **Node.js** |
+| **Cluster** | A Kubernetes cluster (here, an AKS cluster) | Any non-Kubernetes cluster |
+
+Workshop-specific terms:
+
+| Term | Means |
+|---|---|
+| **Squad** | A group of 2–3 participants sharing a breakout room and one Terraform environment |
+| **`api-node`** | The Node.js sample API service. *Proper name — not a Kubernetes Node.* |
+| **`squad-template`** | The Terraform environment template that each squad copies to `squad-XX/` |
+
 ## Workshop format
 
 - **Length:** 2 days × 8 hours (≈ 16 hours hands-on)
 - **Style:** Whiteboard → plan → build → break → fix → measure
-- **Cohort size:** 6–24 participants in pods of 2–3
+- **Cohort size:** 6–24 participants in **squads** of 2–3
 - **Subscription:** Sandbox / MCAPS / training subscription with **≥ 50 vCPU quota** in **eastus2** (primary) and **westus3** (DR)
 - **Tooling provided:** Terraform IaC, container images, sample app source, GitOps repo skeleton, chaos experiments, knowledge check.
 
@@ -44,7 +63,7 @@
 |---|---|---|
 | 09:00 – 10:30 | **M04 — A/B testing with Istio** | Two versions, weighted + header-based routing |
 | 10:30 – 12:00 | **M05 — Deployment rings + gates** | dev → canary → prod via Argo CD + GH Actions |
-| 13:00 – 14:30 | **M06 — Intrinsic outage** | Pod/node/zone chaos; survive with PDB + HPA + multi-AZ |
+| 13:00 – 14:30 | **M06 — Intrinsic outage** | Pod / Node / zone chaos; survive with PDB + HPA + multi-AZ |
 | 14:30 – 15:45 | **M07 — Extrinsic outage** | Region-out; Front Door fails over to passive cluster |
 | 15:45 – 16:30 | **M08 — Optimization & cost** | Spot pools, KEDA, NAP, rightsizing |
 | 16:30 – 17:00 | **Knowledge check** + close | Each participant rated L200/300/400 |
@@ -66,8 +85,8 @@
 │   ├── 07-extrinsic-outage/
 │   └── 08-optimization/
 ├── infra/terraform/                   # all IaC (hub-spoke, AKS, ACR, KV, obs, Front Door)
-├── apps/                              # polyglot sample app
-│   ├── api-node/                      # Node.js REST API (the "product" service)
+├── apps/                              # polyglot sample app (one Pod per service in K8s)
+│   ├── api-node/                      # Node.js REST API (the "product" service; the name is the app, not a K8s Node)
 │   ├── worker-python/                 # Python background worker (KEDA-scaled)
 │   └── web-react/                     # React frontend
 ├── k8s/                               # raw manifests + kustomize overlays

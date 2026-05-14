@@ -3,13 +3,13 @@
 # against the private AKS API server. Tears down with --destroy.
 set -euo pipefail
 
-POD=${1:?usage: $0 <pod-id> [--destroy]}
+SQUAD=${1:?usage: $0 <squad-id> [--destroy]}
 ACTION=${2:-create}
 
-cd "$(dirname "$0")/../infra/terraform/envs/pod-$POD"
+cd "$(dirname "$0")/../infra/terraform/envs/squad-$SQUAD"
 RG=$(terraform output -raw primary_resource_group)
 LOC=$(terraform output -raw aks_primary_name | awk -F- '{print $5}')
-VM=sita-jumpbox-${POD}
+VM=sita-jumpbox-${SQUAD}
 
 if [ "$ACTION" = "--destroy" ]; then
   az vm delete -g $RG -n $VM -y

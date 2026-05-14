@@ -1,5 +1,5 @@
 subscription_id = "00000000-0000-0000-0000-000000000000" # facilitator provides
-pod_id          = "01"
+squad_id        = "01"
 github_repo     = "your-org/aks-briefing-with-labs"
 admin_object_ids = [
   # "<your Entra object id>",

@@ -74,7 +74,7 @@ Use the **AKS baseline initiative**:
 ```bash
 SCOPE=$(az aks show -g $RG -n $AKS --query id -o tsv)
 az policy assignment create \
-  --name aks-baseline-${POD:-01} \
+  --name aks-baseline-${SQUAD:-01} \
   --display-name "AKS baseline policies" \
   --scope $SCOPE \
   --policy-set-definition "/providers/Microsoft.Authorization/policySetDefinitions/a8640138-9b0a-4a28-b8cb-1666c838647d"

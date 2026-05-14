@@ -4,7 +4,7 @@ variable "resource_group_name" { type = string }
 variable "location" { type = string }
 
 resource "azurerm_virtual_network" "hub" {
-  name                = "${var.naming.program}-${var.naming.pod}-vnet-hub-${var.naming.suffix}"
+  name                = "${var.naming.program}-${var.naming.squad}-vnet-hub-${var.naming.suffix}"
   resource_group_name = var.resource_group_name
   location            = var.location
   address_space       = ["10.0.0.0/22"]
@@ -28,5 +28,5 @@ resource "azurerm_subnet" "bastion" {
 # NOTE: Bastion + Firewall provisioning is intentionally optional/disabled by default
 # to keep sandbox costs predictable. Module 02 turns them on as a stretch goal.
 
-output "vnet_id"   { value = azurerm_virtual_network.hub.id }
+output "vnet_id" { value = azurerm_virtual_network.hub.id }
 output "vnet_name" { value = azurerm_virtual_network.hub.name }

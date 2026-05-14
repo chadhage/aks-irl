@@ -22,17 +22,17 @@ variable "enable_spot_pool" {
 }
 
 resource "azurerm_user_assigned_identity" "aks" {
-  name                = "${var.naming.program}-${var.naming.pod}-aks-mi-${var.region_short}-${var.naming.suffix}"
+  name                = "${var.naming.program}-${var.naming.squad}-aks-mi-${var.region_short}-${var.naming.suffix}"
   resource_group_name = var.resource_group_name
   location            = var.location
   tags                = var.tags
 }
 
 resource "azurerm_kubernetes_cluster" "this" {
-  name                              = "${var.naming.program}-${var.naming.pod}-aks-${var.region_short}-${var.naming.suffix}"
+  name                              = "${var.naming.program}-${var.naming.squad}-aks-${var.region_short}-${var.naming.suffix}"
   resource_group_name               = var.resource_group_name
   location                          = var.location
-  dns_prefix                        = "${var.naming.program}${var.naming.pod}${var.region_short}${var.naming.suffix}"
+  dns_prefix                        = "${var.naming.program}${var.naming.squad}${var.region_short}${var.naming.suffix}"
   kubernetes_version                = var.kubernetes_version
   sku_tier                          = "Standard"
   role_based_access_control_enabled = true
@@ -92,7 +92,7 @@ resource "azurerm_kubernetes_cluster" "this" {
   }
 
   service_mesh_profile {
-    mode     = "Istio"
+    mode      = "Istio"
     revisions = ["asm-1-23"]
   }
 
@@ -105,8 +105,8 @@ resource "azurerm_kubernetes_cluster" "this" {
     utc_offset  = "+00:00"
   }
 
-  auto_upgrade_channel       = "stable"
-  node_os_upgrade_channel    = "NodeImage"
+  auto_upgrade_channel    = "stable"
+  node_os_upgrade_channel = "NodeImage"
 }
 
 data "azurerm_client_config" "current" {}
@@ -146,9 +146,9 @@ resource "azurerm_kubernetes_cluster_node_pool" "spot" {
   max_count             = 4
   os_disk_type          = "Ephemeral"
   mode                  = "User"
-  node_taints = ["kubernetes.azure.com/scalesetpriority=spot:NoSchedule"]
+  node_taints           = ["kubernetes.azure.com/scalesetpriority=spot:NoSchedule"]
   node_labels = {
-    "workload"                            = "batch"
+    "workload"                              = "batch"
     "kubernetes.azure.com/scalesetpriority" = "spot"
   }
   tags = var.tags
@@ -167,9 +167,9 @@ resource "azurerm_role_assignment" "acr_pull" {
 # this as a documented stretch step (Module 02) rather than wire it across
 # modules and risk a circular dependency.
 
-output "cluster_name"        { value = azurerm_kubernetes_cluster.this.name }
-output "cluster_id"          { value = azurerm_kubernetes_cluster.this.id }
-output "oidc_issuer_url"     { value = azurerm_kubernetes_cluster.this.oidc_issuer_url }
-output "kubelet_object_id"   { value = azurerm_kubernetes_cluster.this.kubelet_identity[0].object_id }
+output "cluster_name" { value = azurerm_kubernetes_cluster.this.name }
+output "cluster_id" { value = azurerm_kubernetes_cluster.this.id }
+output "oidc_issuer_url" { value = azurerm_kubernetes_cluster.this.oidc_issuer_url }
+output "kubelet_object_id" { value = azurerm_kubernetes_cluster.this.kubelet_identity[0].object_id }
 # Placeholder; populated post-install (Argo CD bootstraps Istio gateway service of LB type)
-output "istio_ingress_fqdn"  { value = "${azurerm_kubernetes_cluster.this.name}.placeholder" }
+output "istio_ingress_fqdn" { value = "${azurerm_kubernetes_cluster.this.name}.placeholder" }

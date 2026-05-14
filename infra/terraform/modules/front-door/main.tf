@@ -5,14 +5,14 @@ variable "primary_origin_host" { type = string }
 variable "secondary_origin_host" { type = string }
 
 resource "azurerm_cdn_frontdoor_profile" "this" {
-  name                = "${var.naming.program}-${var.naming.pod}-afd-${var.naming.suffix}"
+  name                = "${var.naming.program}-${var.naming.squad}-afd-${var.naming.suffix}"
   resource_group_name = var.resource_group_name
   sku_name            = "Standard_AzureFrontDoor"
   tags                = var.tags
 }
 
 resource "azurerm_cdn_frontdoor_endpoint" "this" {
-  name                     = "${var.naming.program}-${var.naming.pod}-${var.naming.suffix}"
+  name                     = "${var.naming.program}-${var.naming.squad}-${var.naming.suffix}"
   cdn_frontdoor_profile_id = azurerm_cdn_frontdoor_profile.this.id
   tags                     = var.tags
 }
@@ -23,8 +23,8 @@ resource "azurerm_cdn_frontdoor_origin_group" "apps" {
   session_affinity_enabled = false
 
   load_balancing {
-    sample_size                 = 4
-    successful_samples_required = 3
+    sample_size                        = 4
+    successful_samples_required        = 3
     additional_latency_in_milliseconds = 50
   }
 
@@ -37,28 +37,28 @@ resource "azurerm_cdn_frontdoor_origin_group" "apps" {
 }
 
 resource "azurerm_cdn_frontdoor_origin" "primary" {
-  name                          = "primary"
-  cdn_frontdoor_origin_group_id = azurerm_cdn_frontdoor_origin_group.apps.id
-  enabled                       = true
-  host_name                     = var.primary_origin_host
-  http_port                     = 80
-  https_port                    = 443
-  origin_host_header            = var.primary_origin_host
-  priority                      = 1
-  weight                        = 1000
+  name                           = "primary"
+  cdn_frontdoor_origin_group_id  = azurerm_cdn_frontdoor_origin_group.apps.id
+  enabled                        = true
+  host_name                      = var.primary_origin_host
+  http_port                      = 80
+  https_port                     = 443
+  origin_host_header             = var.primary_origin_host
+  priority                       = 1
+  weight                         = 1000
   certificate_name_check_enabled = true
 }
 
 resource "azurerm_cdn_frontdoor_origin" "secondary" {
-  name                          = "secondary"
-  cdn_frontdoor_origin_group_id = azurerm_cdn_frontdoor_origin_group.apps.id
-  enabled                       = true
-  host_name                     = var.secondary_origin_host
-  http_port                     = 80
-  https_port                    = 443
-  origin_host_header            = var.secondary_origin_host
-  priority                      = 2
-  weight                        = 1000
+  name                           = "secondary"
+  cdn_frontdoor_origin_group_id  = azurerm_cdn_frontdoor_origin_group.apps.id
+  enabled                        = true
+  host_name                      = var.secondary_origin_host
+  http_port                      = 80
+  https_port                     = 443
+  origin_host_header             = var.secondary_origin_host
+  priority                       = 2
+  weight                         = 1000
   certificate_name_check_enabled = true
 }
 
@@ -66,7 +66,7 @@ resource "azurerm_cdn_frontdoor_route" "default" {
   name                          = "default"
   cdn_frontdoor_endpoint_id     = azurerm_cdn_frontdoor_endpoint.this.id
   cdn_frontdoor_origin_group_id = azurerm_cdn_frontdoor_origin_group.apps.id
-  cdn_frontdoor_origin_ids      = [
+  cdn_frontdoor_origin_ids = [
     azurerm_cdn_frontdoor_origin.primary.id,
     azurerm_cdn_frontdoor_origin.secondary.id,
   ]

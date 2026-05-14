@@ -22,7 +22,7 @@ On the whiteboard, agree on:
 
 > **[F]** Reinforce the platform-vs-application split. The Terraform owns the *platform*; GitOps owns the *application*. Many enterprise outages happen at the seam — the right framing now prevents debate later.
 
-## Step 2 — Day-0 decisions (20 min, your pod)
+## Step 2 — Day-0 decisions (20 min, your squad)
 
 Day-0 decisions are *hard or impossible to change later without rebuilding*. Lock them in.
 

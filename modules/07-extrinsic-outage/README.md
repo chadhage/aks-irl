@@ -79,7 +79,7 @@ Front Door rebalances by priority once primary is healthy. **Do not let traffic 
 - Curl loop against Front Door shows non-zero responses throughout the experiment
 - Grafana shows traffic shift from primary to secondary clusters
 - Front Door diagnostic logs confirm probe-driven failover
-- Each pod writes their observed RTO/RPO into `modules/07-extrinsic-outage/incident-region.md`
+- Each squad writes their observed RTO/RPO into `modules/07-extrinsic-outage/incident-region.md`
 
 ## Stretch (L400)
 - Replace warm-passive with **active-active**: weight both origins 50/50; introduce a shared session store (Redis Enterprise active-geo).

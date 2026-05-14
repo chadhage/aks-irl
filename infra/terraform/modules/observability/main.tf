@@ -4,7 +4,7 @@ variable "resource_group_name" { type = string }
 variable "location" { type = string }
 
 resource "azurerm_log_analytics_workspace" "this" {
-  name                = "${var.naming.program}-${var.naming.pod}-law-${var.naming.suffix}"
+  name                = "${var.naming.program}-${var.naming.squad}-law-${var.naming.suffix}"
   resource_group_name = var.resource_group_name
   location            = var.location
   sku                 = "PerGB2018"
@@ -13,14 +13,14 @@ resource "azurerm_log_analytics_workspace" "this" {
 }
 
 resource "azurerm_monitor_workspace" "this" {
-  name                = "${var.naming.program}-${var.naming.pod}-amw-${var.naming.suffix}"
+  name                = "${var.naming.program}-${var.naming.squad}-amw-${var.naming.suffix}"
   resource_group_name = var.resource_group_name
   location            = var.location
   tags                = var.tags
 }
 
 resource "azurerm_dashboard_grafana" "this" {
-  name                              = "${var.naming.program}-${var.naming.pod}-graf-${var.naming.suffix}"
+  name                              = "${var.naming.program}-${var.naming.squad}-graf-${var.naming.suffix}"
   resource_group_name               = var.resource_group_name
   location                          = var.location
   grafana_major_version             = "11"
@@ -39,6 +39,6 @@ resource "azurerm_dashboard_grafana" "this" {
 }
 
 output "log_analytics_workspace_id" { value = azurerm_log_analytics_workspace.this.id }
-output "monitor_workspace_id"       { value = azurerm_monitor_workspace.this.id }
-output "grafana_id"                 { value = azurerm_dashboard_grafana.this.id }
-output "grafana_endpoint"           { value = azurerm_dashboard_grafana.this.endpoint }
+output "monitor_workspace_id" { value = azurerm_monitor_workspace.this.id }
+output "grafana_id" { value = azurerm_dashboard_grafana.this.id }
+output "grafana_endpoint" { value = azurerm_dashboard_grafana.this.endpoint }

@@ -1,15 +1,28 @@
 # Student Guide — Enterprise-Scale AKS IRL
 
-Welcome. Over the next two days you and your pod will take a real application from **a napkin sketch to a live customer**, then **A/B test it, ring it through dev → canary → prod, survive two outages, and optimize it**. You'll leave with a calibrated rating (high L200, L300, or L400) and — more importantly — the muscle memory to do this back at work.
+Welcome. Over the next two days you and your squad will take a real application from **a napkin sketch to a live customer**, then **A/B test it, ring it through dev → canary → prod, survive two outages, and optimize it**. You'll leave with a calibrated rating (high L200, L300, or L400) and — more importantly — the muscle memory to do this back at work.
 
 > This guide is **yours**. Read it before each block, scribble in it, and use the checklists to keep yourself unblocked. Your facilitator is running [DELIVERY-GUIDE.md](DELIVERY-GUIDE.md) — you don't need to read that one.
+
+## Terminology (read first)
+
+Kubernetes words mean **Kubernetes things** in this workshop — nothing else.
+
+| Word | Means | Does **not** mean |
+|---|---|---|
+| **Pod** | A Kubernetes Pod | A group of participants — we call those **squads** |
+| **Container** | A Kubernetes container running inside a Pod | Azure Container Registry / Azure Container Apps / a Docker container on your laptop — those get spelled out in full |
+| **Node** | A Kubernetes Node (VM in an AKS node pool) | Node.js — written out as **Node.js** when we mean the runtime |
+| **Cluster** | A Kubernetes (AKS) Cluster | Any other clustered service |
+| **Squad** | A 2–3-person group of participants sharing a breakout room and one Terraform environment | A Kubernetes Pod — unrelated |
+| **`api-node`** | The Node.js sample API service (proper name) | A Kubernetes Node |
 
 ---
 
 ## Table of contents
 - [Before you arrive](#before-you-arrive)
 - [How the workshop runs](#how-the-workshop-runs)
-- [Your pod, your responsibilities](#your-pod-your-responsibilities)
+- [Your squad, your responsibilities](#your-squad-your-responsibilities)
 - [Working remotely without burning out](#working-remotely-without-burning-out)
 - [Day 1 walkthrough](#day-1-walkthrough)
 - [Day 2 walkthrough](#day-2-walkthrough)
@@ -61,30 +74,30 @@ All `[OK]` lines green? You're ready.
 - Each **block is 60–90 minutes** and follows the same shape:
   1. Lead frames the goal (3–5 min)
   2. Lead demos the hardest step live (10–15 min)
-  3. **You and your pod** do it in breakouts (20–30 min)
+  3. **You and your squad** do it in breakouts (20–30 min)
   4. Reconvene, share screenshots, debug edge cases (10–15 min)
   5. **Knowledge check** in chat (2–5 min)
   6. Q&A (2–5 min)
-- **You'll spend most of your time in your pod breakout room, not in the main room.** That's the design.
+- **You'll spend most of your time in your squad breakout room, not in the main room.** That's the design.
 
 > 📅 Full block schedule and exact timings live in [DELIVERY-GUIDE.md](DELIVERY-GUIDE.md). You don't need to memorize it — facilitators will herd you in and out of breakouts.
 
 ---
 
-## Your pod, your responsibilities
+## Your squad, your responsibilities
 
-You'll be assigned to a pod of **2–3 people** with a shared breakout room.
+You'll be assigned to a squad of **2–3 people** with a shared breakout room.
 
 ### Rotating roles (rotate every block)
 | Role | Responsibility |
 |---|---|
 | **Driver** | Hands on keyboard. Shares screen in the breakout. |
 | **Navigator** | Reads the module README, calls out steps, watches for typos. |
-| **Observer** *(if 3-person pod)* | Owns Grafana / logs / chat in the main room. Speaks for the pod when called on. |
+| **Observer** *(if 3-person squad)* | Owns Grafana / logs / chat in the main room. Speaks for the squad when called on. |
 
 Rotate roles **every block**, no exceptions. Each person should drive `terraform`, `kubectl`, and `git` at least once.
 
-### Pod hygiene
+### Squad hygiene
 - One person commits to git; the rest pull. Don't fight over branches.
 - Use a shared scratchpad (Teams channel, OneNote, or a `notes.md` in the repo) for commands you'll reuse.
 - If you fall behind, **say so in main chat at the next reconvene** — TAs will help.
@@ -107,20 +120,20 @@ This is a packed two days. Protect your focus.
 
 ### Block 0 — Kickoff (30 min)
 **What you'll do**
-- Meet your pod, claim your breakout room
+- Meet your squad, claim your breakout room
 - Run `./scripts/preflight.sh` and resolve any reds
 - Pre-flight knowledge check in chat: *"Why does an AKS cluster have a system node pool?"*
 
-**Done when** — preflight is green, you know your pod-mates' names.
+**Done when** — preflight is green, you know your squad-mates' names.
 
 ---
 
 ### Block 1 — M00 Envisioning & whiteboarding (60 min) 📄 [modules/00-envisioning/README.md](modules/00-envisioning/README.md)
 **What you'll do**
-- Read the Contoso Storefront brief out loud in your pod
-- Fill in your pod's whiteboard frame: **9 Day-0 decisions** (cluster SKU, API access, pod IPs, mesh, OS, zones, regions, identity, secrets)
+- Read the Contoso Storefront brief out loud in your squad
+- Fill in your squad's whiteboard frame: **9 Day-0 decisions** (cluster SKU, API access, pod IPs, mesh, OS, zones, regions, identity, secrets)
 - Draft `adr-001-aks-platform.md` using `modules/00-envisioning/adr-template.md`
-- Two pods present to the room; everyone heckles (politely)
+- Two squads present to the room; everyone heckles (politely)
 
 **Done when** — your ADR has a decision, a rationale, and at least one alternative per Day-0 question.
 
@@ -130,9 +143,9 @@ This is a packed two days. Protect your focus.
 
 ### Block 2 — M01 part 1: Bootstrap + start `terraform apply` (80 min) 📄 [modules/01-platform-foundation/README.md](modules/01-platform-foundation/README.md)
 **What you'll do**
-1. Receive your pod's OIDC service-principal creds from the facilitator (DM)
+1. Receive your squad's OIDC service-principal creds from the facilitator (DM)
 2. Set GitHub repo secrets (`AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`)
-3. Copy `terraform.tfvars.example` → `terraform.tfvars`, fill in pod-specific values
+3. Copy `terraform.tfvars.example` → `terraform.tfvars`, fill in squad-specific values
 4. `terraform init`, `terraform plan`, `terraform apply` — **then walk away while it runs (~25 min)**
 5. **While apply runs**, read [modules/02-cluster-hardening/README.md](modules/02-cluster-hardening/README.md)
 
@@ -182,7 +195,7 @@ This is a packed two days. Protect your focus.
 - `curl` your Front Door endpoint → 200 with `"version":"v1"`
 - Open your storefront in a browser
 - Run a load test: `hey -z 30s -c 20 https://<your-fd>.azurefd.net/api/products`
-- Watch Grafana fill with timeseries; take a **screenshot** (saved to `pod-notes/` or your scratchpad)
+- Watch Grafana fill with timeseries; take a **screenshot** (saved to `squad-notes/` or your scratchpad)
 
 **Done when** — A teammate on a different network confirms they hit your URL.
 
@@ -194,7 +207,7 @@ This is a packed two days. Protect your focus.
 
 ### Block 6 — Day-1 mini check + retro (15 min)
 - Three rapid-fire questions in chat (your scribe will grade)
-- Each pod drops one **+** (what worked) and one **Δ** (what to change) in chat
+- Each squad drops one **+** (what worked) and one **Δ** (what to change) in chat
 - Homework: skim Modules 04 and 06 tonight (15 min each, max)
 - **Leave your cluster running.** You can scale `node_pool_user` to `min=1` if cost-sensitive — `terraform.tfvars` then `terraform apply`.
 
@@ -245,7 +258,7 @@ This is a packed two days. Protect your focus.
 ---
 
 ### Block 3 — M06 Intrinsic outage (90 min) 📄 [modules/06-intrinsic-outage/README.md](modules/06-intrinsic-outage/README.md)
-**Set up the "war room" view in your pod breakout** — three things visible at once:
+**Set up the "war room" view in your squad breakout** — three things visible at once:
 - Live Grafana (success rate + P95 panels)
 - `kubectl get pods -n app-prod -w`
 - A curl loop hitting your Front Door
@@ -331,7 +344,7 @@ You'll see **12 short checks** across the workshop plus the final assessment. Th
 **Tips**
 - Be concise. A 2-sentence right answer beats a paragraph of vague.
 - If you don't know, say **"I don't know, but I'd find out by …"** — that's an L300 answer and earns partial credit.
-- Tie answers to **what you actually did** in your pod when you can.
+- Tie answers to **what you actually did** in your squad when you can.
 
 ---
 
@@ -343,7 +356,7 @@ You'll see **12 short checks** across the workshop plus the final assessment. Th
 |---|---|---|
 | `AuthorizationFailed` on first apply | OIDC SP missing Owner / wrong subscription | Confirm `subscription_id` in `terraform.tfvars`. Re-check the SP's role assignment. |
 | `Microsoft.Cdn` / `Microsoft.OperationalInsights` not registered | Provider not registered in this subscription | `az provider register -n Microsoft.Cdn` (etc.) — then retry. |
-| `subnet address space overlap` | Two pods using same CIDR | Change `vnet_address_space` and `subnet_*` in your tfvars; pods get unique `/20`s. |
+| `subnet address space overlap` | Two squads using same CIDR | Change `vnet_address_space` and `subnet_*` in your tfvars; squads get unique `/20`s. |
 | Apply hangs > 30 min on Front Door | Probe configuration not yet propagated | Be patient up to 30 min; if past that, TA. |
 | `local_account_disabled` blocks `kubectl` | Expected — use `az aks command invoke` or set up Entra-based `kubectl` | See M02 README. |
 
@@ -453,7 +466,7 @@ grep -rn "REPLACE" k8s gitops
   - [AKS public roadmap](https://aka.ms/aks/roadmap)
   - [Argo CD best practices](https://argo-cd.readthedocs.io/en/stable/operator-manual/declarative-setup/)
   - [Istio ambient mode](https://istio.io/latest/docs/ambient/overview/) — where the mesh story is headed
-- **Try this at home**: replicate your pod's setup in your own subscription using `infra/terraform/envs/pod-template`. Skip the OIDC complexity by running `terraform apply` locally with `az login`.
+- **Try this at home**: replicate your squad's setup in your own subscription using `infra/terraform/envs/squad-template`. Skip the OIDC complexity by running `terraform apply` locally with `az login`.
 - **Got promoted to platform owner?** [FACILITATOR.md](FACILITATOR.md) explains how to run this workshop for your team.
 
 Good luck. Drive the platform; don't let it drive you. 🚀
