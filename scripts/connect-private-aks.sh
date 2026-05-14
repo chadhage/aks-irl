@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Convenience: deploy a tiny Bastion-fronted jumpbox so participants can kubectl
+# Convenience: deploy a tiny Bastion-fronted jumpbox so you can kubectl
 # against the private AKS API server. Tears down with --destroy.
 set -euo pipefail
 
-SQUAD=${1:?usage: $0 <squad-id> [--destroy]}
+LAB=${1:-01}
 ACTION=${2:-create}
 
-cd "$(dirname "$0")/../infra/terraform/envs/squad-$SQUAD"
+cd "$(dirname "$0")/../infra/terraform/envs/lab"
 RG=$(terraform output -raw primary_resource_group)
 LOC=$(terraform output -raw aks_primary_name | awk -F- '{print $5}')
-VM=sita-jumpbox-${SQUAD}
+VM=sita-jumpbox-${LAB}
 
 if [ "$ACTION" = "--destroy" ]; then
   az vm delete -g $RG -n $VM -y

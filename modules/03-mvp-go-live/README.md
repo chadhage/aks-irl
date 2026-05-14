@@ -1,6 +1,6 @@
 # Module 03 — MVP Go-Live
 
-**Duration:** 150 min  |  **Level target:** L300 (L400 stretch on supply-chain)  |  **Day:** 1
+**Time:** ~90 min hands-on + builds  |  **Level target:** L300 (L400 stretch on supply-chain)
 
 **Success criterion this satisfies:** #1 — *Take an MVP from napkin to live customer.*
 
@@ -10,7 +10,7 @@
 - Watch traffic flow through Front Door → Istio gateway → `api-node` v1
 - Hit your first live request as "a customer"
 
-## Whiteboard prompts (5 min)
+## Things to think through first
 1. Why is the app **not** deployed by Terraform? What boundary does that draw?
 2. The image tag is the unit of truth for "what is running where". What happens if a tag is moved (`v1` repointed)?
 3. If Argo CD sync fails, where do you look first?
@@ -18,7 +18,7 @@
 ## Step 1 — Build & push the three images
 From the repo root, with `ACR_LOGIN_SERVER` exported (output of Terraform):
 ```bash
-export ACR=$(terraform -chdir=infra/terraform/envs/squad-01 output -raw acr_login_server)
+export ACR=$(terraform -chdir=infra/terraform/envs/lab output -raw acr_login_server)
 az acr login --name ${ACR%%.*}
 
 for app in api-node web-react worker-python; do
@@ -33,7 +33,7 @@ Then update the base manifests' image references — easiest is to set them per-
 # Commit and push to main of your fork.
 ```
 
-> **[F]** This is the moment to introduce **`kustomize edit set image`** so participants don't hand-edit YAML.
+> Tip: use **`kustomize edit set image`** to update image refs cleanly instead of hand-editing YAML.
 
 ## Step 2 — Bootstrap Argo CD
 ```bash
@@ -45,7 +45,7 @@ az aks command invoke -g $RG -n $AKS --command "
 ```
 Wait for `argocd-server` to be Ready. Then apply the project and root Application:
 ```bash
-# From a workstation that can reach the cluster (Bastion or 'az aks command invoke'):
+# From a workstation that can reach the Cluster (Bastion or 'az aks command invoke'):
 kubectl apply -f gitops/projects/storefront.yaml
 kubectl apply -f gitops/apps/root.yaml
 ```
@@ -81,13 +81,13 @@ Open Grafana → **Kubernetes / Compute Resources / Namespace (Workloads)** dash
 ## Validation
 - `curl $FD/api/products` returns 200 with `version: v1`
 - Argo CD UI shows `ring-dev`, `ring-canary`, `ring-prod` all syncing or healthy
-- Grafana dashboards have non-zero metrics from your cluster
+- Grafana dashboards have non-zero metrics from your Cluster
 - The web UI renders products and shows `v1` pill
 
 ## Stretch (L400)
 - Enable **ACR Tasks** to build the image on push to `main` instead of building locally.
 - Sign images with **notation** + **AKV-signed certificate**, and enforce signed-only via Ratify.
-- Add an Istio `AuthorizationPolicy` so only the ingress gateway can call `api-node` (deny pod-to-pod from outside the mesh).
+- Add an Istio `AuthorizationPolicy` so only the ingress gateway can call `api-node` (deny Pod-to-Pod from outside the mesh).
 
 ## Cleanup
 None — Day 2 builds directly on this.

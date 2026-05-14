@@ -1,6 +1,6 @@
 # Module 08 — Optimization & Cost
 
-**Duration:** 45 min  |  **Level target:** L300 (L400 stretch)  |  **Day:** 2
+**Time:** ~30 min  |  **Level target:** L300 (L400 stretch)
 
 ## Outcomes
 - Turn on the spot node pool and steer batch work to it

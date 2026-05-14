@@ -1,6 +1,6 @@
 # Module 05 — Deployment Rings with Gates
 
-**Duration:** 90 min  |  **Level target:** L300 → L400  |  **Day:** 2
+**Time:** ~60 min  |  **Level target:** L300 → L400
 
 **Success criterion this satisfies:** #3 — *Add multiple deployment rings with gates.*
 
@@ -84,7 +84,7 @@ Two paths, both timed:
 
 **Truthful path — revert via PR:** open a revert PR on the prod overlay's `kustomization.yaml`. Merge → Argo CD shows OutOfSync → manual sync. **~90 seconds.**
 
-> **[F]** Both are valid. The truthful path keeps Git as the source of truth — the Argo rollback marks the Application as out-of-sync until Git is reverted, which is friction by design.
+> Both are valid. The truthful path keeps Git as the source of truth — the Argo rollback marks the Application as out-of-sync until Git is reverted, which is friction by design.
 
 ## Validation
 - A merged PR ends up in `ring-prod` only after PR review **and** manual Argo sync

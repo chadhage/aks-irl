@@ -1,10 +1,9 @@
 # Prerequisites
 
-> Complete every item in **Pre-flight** before Day 1 morning. The **Sandbox quotas** section is for the facilitator.
+> Complete every item below before you start [Module 00](modules/00-envisioning/README.md). Allow ~30 minutes the first time.
 
-## Pre-flight (every participant)
+## 1. Local tools (one desktop)
 
-### 1. Local tools
 Install these and confirm versions:
 
 | Tool | Min version | Check |
@@ -19,34 +18,19 @@ Install these and confirm versions:
 | jq, yq | latest | `jq --version`, `yq --version` |
 | GitHub CLI | 2.50 | `gh --version` |
 
-Optional but useful: `k9s`, `stern`, `argocd` CLI, `istioctl`.
+Optional but useful: `k9s`, `stern`, `argocd` CLI, `istioctl`, `hey` (load test).
 
-### 2. Azure
-- Reader access to the workshop subscription (facilitator will share name)
-- `az login` succeeds
-- Your assigned **resource-group prefix** (`sita-<initials>-…`) communicated by the facilitator
-- Microsoft Entra tenant ID handy
+## 2. Azure — one learning subscription
 
-### 3. GitHub
-- Personal account that can create a private fork of this repo
-- A Personal Access Token (fine-grained, scoped to your fork) with `repo` and `workflow` scopes — needed for Argo CD to read the GitOps repo
+- One Azure subscription you can use for this lab (MCAPS, MPN sandbox, Visual Studio benefit, or any pay-as-you-go you control)
+- You are **Owner** on the subscription (or at least on the resource group where everything will live)
+- `az login` succeeds and `az account show` returns the right subscription
 
-### 4. Connectivity
-- Outbound TCP 443 to `*.azure.com`, `ghcr.io`, `mcr.microsoft.com`, `github.com`
-- Bastion will be used to reach private-API AKS; **no public kubectl endpoint**
+> The lab provisions Azure Front Door (global) + dual-region AKS + dual Key Vaults + ACR + observability. Plan for **~$25–$40/day** while everything is running. Modules include scale-to-zero / stop instructions so you can pause overnight.
 
-### 5. Pre-flight script
-From the repo root:
-```bash
-./scripts/preflight.sh
-```
-It prints a pass/fail line per check. Don't show up Day 1 with red lines.
+### Quotas to verify
 
-## Sandbox quotas (facilitator-only)
-
-> **Terminology:** "squad" = a group of 2–3 participants sharing one Terraform environment. (Kubernetes Pods, Containers, Nodes, and Clusters are always K8s objects in this repo.)
-
-Per participant squad (2–3 people), reserve:
+In your subscription, confirm you have headroom in both regions:
 
 | Resource | Quantity | Region |
 |---|---|---|
@@ -54,14 +38,21 @@ Per participant squad (2–3 people), reserve:
 | vCPU (Standard_D-series v5) | 16 | westus3 |
 | Public IP (Standard) | 4 | eastus2 + westus3 |
 | Front Door Standard profile | 1 | global |
-| Log Analytics workspaces | 1 | eastus2 |
+| Log Analytics workspace | 1 | eastus2 |
 | Azure Managed Grafana | 1 | eastus2 |
 | Key Vault | 2 | eastus2 + westus3 |
 | ACR (Premium, zone-redundant) | 1 | eastus2 (geo-replicated to westus3) |
 
-**Total per squad ≈ 40 vCPU**. Order the subscription with **≥ 50 vCPU** in each region to leave headroom for autoscale during chaos labs.
+Total **≈ 40 vCPU**. Order **≥ 50 vCPU** in each region so autoscale during chaos labs has headroom.
+
+Check quotas:
+```bash
+az vm list-usage --location eastus2 -o table | findstr -i "vcpus dsv5"
+az vm list-usage --location westus3 -o table | findstr -i "vcpus dsv5"
+```
 
 ### Feature flags / preview registrations
+
 Run once per subscription:
 ```bash
 az feature register --namespace Microsoft.ContainerService --name EnableIstioMeshPreview
@@ -76,24 +67,47 @@ az provider register --namespace Microsoft.Chaos
 az provider register --namespace Microsoft.Cdn
 ```
 
-### Service principal / OIDC for GitHub Actions
-The facilitator provisions one **per squad** using `infra/terraform/bootstrap/`. See [modules/01-platform-foundation/README.md](modules/01-platform-foundation/README.md).
+## 3. GitHub
+
+- Personal account that can host a private fork of this repo
+- A fine-grained Personal Access Token scoped to your fork with `repo` and `workflow` scopes — Argo CD will use it to read the GitOps repo
+
+Fork the repo in the GitHub UI, then clone your fork locally:
+```bash
+git clone https://github.com/<your-user>/aks-irl.git
+cd aks-irl
+```
+
+## 4. Connectivity
+
+- Outbound TCP 443 to `*.azure.com`, `ghcr.io`, `mcr.microsoft.com`, `github.com`
+- Azure Bastion is used to reach the private-API AKS Cluster (no public `kubectl` endpoint)
+
+## 5. Pre-flight script
+
+From the repo root:
+```bash
+./scripts/preflight.sh
+```
+It prints a pass/fail line per check. Resolve any red lines before starting Module 00.
 
 ## Naming convention
 
-`{program}-{squad}-{purpose}-{region}-{instance}`
+`{program}-{lab}-{purpose}-{region}-{instance}`
 
 - `program` = `sita`
-- `squad` = `s01`, `s02`, … (the workshop squad ID — unrelated to Kubernetes Pods)
+- `lab` = `l01` (the lab identifier — defaults to `01`; you only need one)
 - `purpose` = `aks`, `kv`, `acr`, `rg`, `vnet`, …
 - `region` = `eus2`, `wus3`
 - `instance` = 3-char random suffix from Terraform `random_string`
 
 Examples:
-- Primary resource group: `sita-s01-rg-eus2-a1b`
-- AKS cluster: `sita-s01-aks-eus2-a1b`
-- ACR: `sitas01acreus2a1b` (no dashes — ACR limitation)
+- Primary resource group: `sita-l01-rg-eus2-a1b`
+- AKS Cluster: `sita-l01-aks-eus2-a1b`
+- ACR: `sital01acreus2a1b` (no dashes — ACR limitation)
 
 ## Cost guardrails
 
-The full stack costs roughly **\$25–\$40 per squad per day** if left running. Modules include **stop / scale-to-zero** instructions for breaks. Final cleanup is `terraform destroy` at the end of Day 2.
+- **Stop when you walk away.** Each module ends with an optional "scale-to-zero" snippet. Use it.
+- **Final cleanup** is `terraform destroy` in `infra/terraform/envs/lab` (covered at the end of [LAB-GUIDE.md](LAB-GUIDE.md)).
+- Set a **subscription budget alert** at ~$50/day to catch surprises.

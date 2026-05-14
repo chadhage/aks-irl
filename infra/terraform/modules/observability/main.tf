@@ -4,7 +4,7 @@ variable "resource_group_name" { type = string }
 variable "location" { type = string }
 
 resource "azurerm_log_analytics_workspace" "this" {
-  name                = "${var.naming.program}-${var.naming.squad}-law-${var.naming.suffix}"
+  name                = "${var.naming.program}-${var.naming.lab}-law-${var.naming.suffix}"
   resource_group_name = var.resource_group_name
   location            = var.location
   sku                 = "PerGB2018"
@@ -13,14 +13,14 @@ resource "azurerm_log_analytics_workspace" "this" {
 }
 
 resource "azurerm_monitor_workspace" "this" {
-  name                = "${var.naming.program}-${var.naming.squad}-amw-${var.naming.suffix}"
+  name                = "${var.naming.program}-${var.naming.lab}-amw-${var.naming.suffix}"
   resource_group_name = var.resource_group_name
   location            = var.location
   tags                = var.tags
 }
 
 resource "azurerm_dashboard_grafana" "this" {
-  name                              = "${var.naming.program}-${var.naming.squad}-graf-${var.naming.suffix}"
+  name                              = "${var.naming.program}-${var.naming.lab}-graf-${var.naming.suffix}"
   resource_group_name               = var.resource_group_name
   location                          = var.location
   grafana_major_version             = "11"

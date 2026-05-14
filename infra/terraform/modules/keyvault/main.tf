@@ -8,7 +8,7 @@ variable "admin_object_ids" { type = list(string) }
 data "azurerm_client_config" "current" {}
 
 resource "azurerm_key_vault" "this" {
-  name                          = "${var.naming.program}${var.naming.squad}kv${var.region_short}${var.naming.suffix}"
+  name                          = "${var.naming.program}${var.naming.lab}kv${var.region_short}${var.naming.suffix}"
   resource_group_name           = var.resource_group_name
   location                      = var.location
   tenant_id                     = data.azurerm_client_config.current.tenant_id

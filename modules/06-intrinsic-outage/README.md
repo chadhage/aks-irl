@@ -1,6 +1,6 @@
 # Module 06 — Surviving an Intrinsic Outage
 
-**Duration:** 90 min  |  **Level target:** L300 → L400  |  **Day:** 2
+**Time:** ~75 min  |  **Level target:** L300 → L400
 
 **Success criterion this satisfies:** #4 — *Survive an intrinsic outage that causes service degradation.*
 
@@ -12,7 +12,7 @@
 - Survive via PDBs + HPAs + topology-spread + Istio outlier detection
 - Capture a post-incident timeline aligned to the SLI
 
-## Whiteboard prompts (5 min)
+## Things to think through first
 1. What's the difference between liveness and readiness, and which one matters for graceful degradation?
 2. Why won't an HPA save you from a CPU stampede if your `requests` are wrong?
 3. How does Istio outlier detection complement Kubernetes readiness?

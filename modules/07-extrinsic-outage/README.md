@@ -1,6 +1,6 @@
 # Module 07 — Surviving an Extrinsic Outage
 
-**Duration:** 75 min  |  **Level target:** L300 → L400  |  **Day:** 2
+**Time:** ~60 min  |  **Level target:** L300 → L400
 
 **Success criterion this satisfies:** #5 — *Survive an extrinsic outage that causes service interruptions.*
 
@@ -12,7 +12,7 @@
 - Recover when the primary returns, **without dual-writing** the unprepared way
 - Calculate observed RTO and RPO
 
-## Whiteboard prompts (5 min)
+## Things to think through first
 1. What state lives only in the cluster? Where is the long-lived state actually persisted?
 2. Why is **warm passive** preferred to **cold standby** for a 4× growth workload?
 3. What would a true active-active design require that warm-passive doesn't?
@@ -79,7 +79,7 @@ Front Door rebalances by priority once primary is healthy. **Do not let traffic 
 - Curl loop against Front Door shows non-zero responses throughout the experiment
 - Grafana shows traffic shift from primary to secondary clusters
 - Front Door diagnostic logs confirm probe-driven failover
-- Each squad writes their observed RTO/RPO into `modules/07-extrinsic-outage/incident-region.md`
+- Write your observed RTO/RPO into `modules/07-extrinsic-outage/incident-region.md`
 
 ## Stretch (L400)
 - Replace warm-passive with **active-active**: weight both origins 50/50; introduce a shared session store (Redis Enterprise active-geo).

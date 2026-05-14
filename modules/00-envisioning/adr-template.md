@@ -2,7 +2,7 @@
 
 - Status: Proposed | Accepted | Superseded by ADR-XXX
 - Date: YYYY-MM-DD
-- Authors: <squad members>
+- Authors: <your name>
 
 ## Context
 What is the problem you are addressing? What constraints (regulatory, scale, cost, organizational) shape the answer?

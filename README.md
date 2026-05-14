@@ -1,80 +1,71 @@
 # Enterprise-Scale AKS — In Real Life (IRL)
 
-> A 2-day, hands-on workshop that takes an AKS practitioner from a **napkin sketch** to a **live customer**, then through A/B testing, deployment rings, surviving intrinsic and extrinsic outages, and finally a knowledge check.
+> A self-paced lab that takes you from a **napkin sketch** to a **live customer** on AKS, then through A/B testing, deployment rings, surviving intrinsic and extrinsic outages, optimization, and a final knowledge check.
 
-**Audience entry level:** L200 (you've created a cluster, deployed a Pod, used `kubectl`).
-**Audience exit level:**
-- 20% → **L400** (can architect a multi-region, ring-gated, observability-rich AKS platform from scratch)
-- 70% → **L300+** (can confidently operate, scale, and remediate an enterprise AKS platform)
-- 10% → high L200 (comfortable extending and operating, with help on advanced topics)
+**Format.** One learner, one desktop, one Azure learning subscription. No facilitator, no group work, no time pressure.
+
+**Entry level:** L200 (you've created a Cluster, deployed a Pod, used `kubectl`).
+**Exit target:** L300 across the WAF AKS pillars; L400 stretch goals are flagged inside each module.
 
 ## Terminology — read this first
 
-This workshop uses Kubernetes terms strictly. Wherever you see these words, they mean the Kubernetes object — **not** anything else.
+Kubernetes words are reserved for Kubernetes objects in this repo:
 
-| Term | Means (in this workshop) | NOT |
+| Term | Means | NOT |
 |---|---|---|
-| **Pod** | A Kubernetes Pod (one or more containers sharing a network/storage namespace) | A group of participants — we call those **squads** |
+| **Pod** | A Kubernetes Pod | Anything else |
 | **Container** | A Kubernetes container running inside a Pod | Azure Container Registry, Azure Container Apps, or a Docker container on your laptop — those are spelled out in full |
-| **Node** | A Kubernetes Node (a VM in an AKS node pool) | Node.js — when we mean the JavaScript runtime, we say **Node.js** |
-| **Cluster** | A Kubernetes cluster (here, an AKS cluster) | Any non-Kubernetes cluster |
+| **Node** | A Kubernetes Node (a VM in an AKS node pool) | Node.js — written out as **Node.js** when we mean the runtime |
+| **Cluster** | A Kubernetes (AKS) Cluster | Any non-Kubernetes cluster |
+| **`api-node`** | The Node.js sample API service (proper name) | A Kubernetes Node |
 
-Workshop-specific terms:
+## What you build
 
-| Term | Means |
-|---|---|
-| **Squad** | A group of 2–3 participants sharing a breakout room and one Terraform environment |
-| **`api-node`** | The Node.js sample API service. *Proper name — not a Kubernetes Node.* |
-| **`squad-template`** | The Terraform environment template that each squad copies to `squad-XX/` |
-
-## Workshop format
-
-- **Length:** 2 days × 8 hours (≈ 16 hours hands-on)
-- **Style:** Whiteboard → plan → build → break → fix → measure
-- **Cohort size:** 6–24 participants in **squads** of 2–3
-- **Subscription:** Sandbox / MCAPS / training subscription with **≥ 50 vCPU quota** in **eastus2** (primary) and **westus3** (DR)
-- **Tooling provided:** Terraform IaC, container images, sample app source, GitOps repo skeleton, chaos experiments, knowledge check.
+- A hub-spoke network across two regions (eastus2 primary, westus3 passive)
+- A private, zone-redundant AKS Cluster in each region with Istio service mesh, Workload Identity, Key Vault CSI
+- A polyglot sample app (Node.js API, Python worker, React frontend) behind Azure Front Door + WAF
+- GitOps with Argo CD, deployment rings (dev → canary → prod) with a GitHub Actions gate
+- Observability via Log Analytics + Managed Prometheus + Managed Grafana
+- Chaos experiments (Pod kill, Node drain, zone failure, region failover)
 
 ## Success criteria → mapped modules
 
-| # | Success criterion | Module(s) | Day |
-|---|---|---|---|
-| 1 | Take an MVP from napkin to live customer | [modules/00-envisioning](modules/00-envisioning/README.md) → [modules/03-mvp-go-live](modules/03-mvp-go-live/README.md) | 1 |
-| 2 | Extend the MVP and add A/B testing | [modules/04-ab-testing](modules/04-ab-testing/README.md) | 2 |
-| 3 | Add multiple deployment rings with gates | [modules/05-deployment-rings](modules/05-deployment-rings/README.md) | 2 |
-| 4 | Survive an **intrinsic** outage (service degradation) | [modules/06-intrinsic-outage](modules/06-intrinsic-outage/README.md) | 2 |
-| 5 | Survive an **extrinsic** outage (service interruption) | [modules/07-extrinsic-outage](modules/07-extrinsic-outage/README.md) | 2 |
-| 6 | Pass the knowledge check | [assessment/knowledge-check.md](assessment/knowledge-check.md) | 2 (close) |
-
-## Schedule at a glance
-
-### Day 1 — From napkin to live customer
-| Time | Module | Outcome |
+| # | Success criterion | Module(s) |
 |---|---|---|
-| 09:00 – 09:30 | Kickoff + L200 baseline check | Shared vocabulary |
-| 09:30 – 10:30 | **M00 — Envisioning & whiteboarding** | Architecture decision record drafted |
-| 10:30 – 12:00 | **M01 — Platform foundation (Terraform)** | Hub-spoke + AKS + ACR + KV + observability live |
-| 13:00 – 14:00 | **M02 — Cluster hardening & access** | Workload Identity, KV CSI, RBAC, ingress |
-| 14:00 – 16:30 | **M03 — MVP go-live** | Polyglot app live behind Istio gateway |
-| 16:30 – 17:00 | Retro + Day 2 preview | |
+| 1 | Take an MVP from napkin to live customer | [modules/00-envisioning](modules/00-envisioning/README.md) → [modules/03-mvp-go-live](modules/03-mvp-go-live/README.md) |
+| 2 | Add A/B testing | [modules/04-ab-testing](modules/04-ab-testing/README.md) |
+| 3 | Add deployment rings with gates | [modules/05-deployment-rings](modules/05-deployment-rings/README.md) |
+| 4 | Survive an **intrinsic** outage | [modules/06-intrinsic-outage](modules/06-intrinsic-outage/README.md) |
+| 5 | Survive an **extrinsic** outage | [modules/07-extrinsic-outage](modules/07-extrinsic-outage/README.md) |
+| 6 | Pass the knowledge check | [assessment/knowledge-check.md](assessment/knowledge-check.md) |
 
-### Day 2 — Extend, ring, survive, optimize
-| Time | Module | Outcome |
+## Estimated time
+
+The full lab is about **14–18 hours of hands-on work**. Most of that is `terraform apply`, builds, and chaos experiments — you can leave long-running steps in the background.
+
+| Module | Hands-on | Wall-clock (incl. apply waits) |
 |---|---|---|
-| 09:00 – 10:30 | **M04 — A/B testing with Istio** | Two versions, weighted + header-based routing |
-| 10:30 – 12:00 | **M05 — Deployment rings + gates** | dev → canary → prod via Argo CD + GH Actions |
-| 13:00 – 14:30 | **M06 — Intrinsic outage** | Pod / Node / zone chaos; survive with PDB + HPA + multi-AZ |
-| 14:30 – 15:45 | **M07 — Extrinsic outage** | Region-out; Front Door fails over to passive cluster |
-| 15:45 – 16:30 | **M08 — Optimization & cost** | Spot pools, KEDA, NAP, rightsizing |
-| 16:30 – 17:00 | **Knowledge check** + close | Each participant rated L200/300/400 |
+| M00 — Envisioning | 30 min | 30 min |
+| M01 — Platform foundation | 30 min | 60 min (Terraform applies) |
+| M02 — Cluster hardening | 45 min | 45 min |
+| M03 — MVP go-live | 90 min | 2 hr |
+| M04 — A/B testing | 60 min | 75 min |
+| M05 — Deployment rings | 60 min | 80 min |
+| M06 — Intrinsic outage | 75 min | 90 min |
+| M07 — Extrinsic outage | 60 min | 90 min (failover timing) |
+| M08 — Optimization | 30 min | 45 min |
+| Knowledge check | 25 min | 30 min |
+
+You can split this across multiple sittings. The Cluster will sit happily idle if you scale the user node pool to `min = 1` (instructions in M08).
 
 ## Repository layout
 
 ```
 .
 ├── README.md                          # you are here
-├── prerequisites.md                   # what to install/provision before Day 1
-├── modules/                           # lab guides, one per module
+├── prerequisites.md                   # what to install/provision before you start
+├── LAB-GUIDE.md                       # ordered, self-paced walkthrough
+├── modules/                           # one folder per module with the lab steps
 │   ├── 00-envisioning/
 │   ├── 01-platform-foundation/
 │   ├── 02-cluster-hardening/
@@ -84,9 +75,9 @@ Workshop-specific terms:
 │   ├── 06-intrinsic-outage/
 │   ├── 07-extrinsic-outage/
 │   └── 08-optimization/
-├── infra/terraform/                   # all IaC (hub-spoke, AKS, ACR, KV, obs, Front Door)
+├── infra/terraform/                   # all IaC (hub-spoke, AKS, ACR, KV, observability, Front Door)
 ├── apps/                              # polyglot sample app (one Pod per service in K8s)
-│   ├── api-node/                      # Node.js REST API (the "product" service; the name is the app, not a K8s Node)
+│   ├── api-node/                      # Node.js REST API (the name is the app, not a K8s Node)
 │   ├── worker-python/                 # Python background worker (KEDA-scaled)
 │   └── web-react/                     # React frontend
 ├── k8s/                               # raw manifests + kustomize overlays
@@ -95,7 +86,7 @@ Workshop-specific terms:
 ├── gitops/                            # Argo CD app-of-apps, ring definitions
 ├── chaos/                             # Chaos Studio + manual experiments
 ├── .github/workflows/                 # CI: build, scan, push to ACR, bump GitOps
-└── assessment/                        # knowledge check + rubric
+└── assessment/                        # final knowledge check + self-grading rubric
 ```
 
 ## Architecture (target end state)
@@ -131,25 +122,23 @@ flowchart LR
   aks2 -.metrics/logs.-> obs
 ```
 
-## Conventions used in lab guides
+## Conventions used in module guides
 
 Each module's `README.md` follows the same shape:
 
 1. **Outcomes** — what you'll be able to do
 2. **Level target** — L300 baseline + L400 stretch
-3. **Whiteboard prompts** — 5-min discussion before keyboards
-4. **Steps** — copy-pasteable commands
-5. **Validation** — how you know it worked
-6. **Stretch (L400)** — optional deeper dives
-7. **Cleanup** — only at the end of the workshop; in-module cleanups are explicit
-
-> **Facilitator note:** Anything tagged **[F]** is a facilitator-only callout (gotchas, talking points, when to introduce concepts on the whiteboard).
+3. **Steps** — copy-pasteable commands
+4. **Validation** — how you know it worked
+5. **Stretch (L400)** — optional deeper dives
+6. **Cleanup** — only at the end of the lab; in-module cleanups are explicit
 
 ## Getting started
 
 1. Read [prerequisites.md](prerequisites.md) and complete the **pre-flight** checks.
-2. Skim [modules/00-envisioning/README.md](modules/00-envisioning/README.md) the night before.
-3. On Day 1 morning, run `infra/terraform/bootstrap.sh` to create the remote-state storage account.
+2. Skim [LAB-GUIDE.md](LAB-GUIDE.md) for the ordered walkthrough.
+3. Provision the remote-state storage account: `terraform -chdir=infra/terraform/bootstrap init && terraform -chdir=infra/terraform/bootstrap apply`.
+4. Open [modules/00-envisioning/README.md](modules/00-envisioning/README.md) and start.
 
 ## License
 

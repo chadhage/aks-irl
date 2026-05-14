@@ -1,14 +1,15 @@
 variable "subscription_id" {
-  description = "Azure subscription ID for the workshop sandbox."
+  description = "Azure learning subscription ID used for this lab."
   type        = string
 }
 
-variable "squad_id" {
-  description = "Two-digit workshop squad identifier, e.g. 01, 02. (A workshop \"squad\" is a group of 2–3 participants; this is not a Kubernetes Pod.)"
+variable "lab_id" {
+  description = "Two-digit lab identifier, e.g. 01. Defaults to 01 — you only need one."
   type        = string
+  default     = "01"
   validation {
-    condition     = can(regex("^[0-9]{2}$", var.squad_id))
-    error_message = "squad_id must be two digits, e.g. 01."
+    condition     = can(regex("^[0-9]{2}$", var.lab_id))
+    error_message = "lab_id must be two digits, e.g. 01."
   }
 }
 
@@ -37,7 +38,7 @@ variable "kubernetes_version" {
 }
 
 variable "github_repo" {
-  description = "GitHub repo (owner/repo) of the participant's fork, used for OIDC federation."
+  description = "GitHub repo (owner/repo) of your fork, used for OIDC federation."
   type        = string
 }
 

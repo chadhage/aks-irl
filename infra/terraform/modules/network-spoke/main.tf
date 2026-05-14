@@ -15,7 +15,7 @@ locals {
 }
 
 resource "azurerm_virtual_network" "spoke" {
-  name                = "${var.naming.program}-${var.naming.squad}-vnet-${var.region_short}-${var.naming.suffix}"
+  name                = "${var.naming.program}-${var.naming.lab}-vnet-${var.region_short}-${var.naming.suffix}"
   resource_group_name = var.resource_group_name
   location            = var.location
   address_space       = [local.base_cidr]
@@ -47,7 +47,7 @@ resource "azurerm_virtual_network_peering" "spoke_to_hub" {
 }
 
 resource "azurerm_virtual_network_peering" "hub_to_spoke" {
-  name                      = "peer-to-${var.region_short}-${var.naming.squad}"
+  name                      = "peer-to-${var.region_short}-${var.naming.lab}"
   resource_group_name       = var.hub_resource_group
   virtual_network_name      = var.hub_vnet_name
   remote_virtual_network_id = azurerm_virtual_network.spoke.id

@@ -1,13 +1,13 @@
 locals {
   naming = {
     program = var.program
-    squad   = "s${var.squad_id}"
+    lab     = "l${var.lab_id}"
     suffix  = random_string.suffix.result
   }
 
   tags = {
     program     = var.program
-    squad       = local.naming.squad
+    lab         = local.naming.lab
     workshop    = "enterprise-scale-aks-irl"
     cost-center = "training"
     managed-by  = "terraform"
@@ -24,19 +24,19 @@ resource "random_string" "suffix" {
 # ---- Resource groups ----------------------------------------------------------
 
 resource "azurerm_resource_group" "hub" {
-  name     = "${local.naming.program}-${local.naming.squad}-rg-hub-${local.naming.suffix}"
+  name     = "${local.naming.program}-${local.naming.lab}-rg-hub-${local.naming.suffix}"
   location = var.primary_region
   tags     = local.tags
 }
 
 resource "azurerm_resource_group" "primary" {
-  name     = "${local.naming.program}-${local.naming.squad}-rg-eus2-${local.naming.suffix}"
+  name     = "${local.naming.program}-${local.naming.lab}-rg-eus2-${local.naming.suffix}"
   location = var.primary_region
   tags     = local.tags
 }
 
 resource "azurerm_resource_group" "secondary" {
-  name     = "${local.naming.program}-${local.naming.squad}-rg-wus3-${local.naming.suffix}"
+  name     = "${local.naming.program}-${local.naming.lab}-rg-wus3-${local.naming.suffix}"
   location = var.secondary_region
   tags     = local.tags
 }

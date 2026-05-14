@@ -1,6 +1,6 @@
 # Module 04 — A/B Testing with Istio
 
-**Duration:** 90 min  |  **Level target:** L300 → L400  |  **Day:** 2
+**Time:** ~60 min  |  **Level target:** L300 → L400
 
 **Success criterion this satisfies:** #2 — *Extend the MVP and add A/B testing.*
 
@@ -10,7 +10,7 @@
 - Route a specific user cohort to v2 via **header-based** match
 - Measure per-version P95 latency and error rate in Grafana, then promote v2
 
-## Whiteboard prompts (5 min)
+## Things to think through first
 1. Where in the request path does the version split actually happen — at Front Door, ingress gateway, sidecar, or all three?
 2. Why is the **DestinationRule** mandatory even if you only have one subset?
 3. If v2 has a memory leak, what's your kill switch and how fast can you pull it?

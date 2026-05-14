@@ -1,16 +1,16 @@
 # Terraform — Enterprise-Scale AKS infrastructure
 
-This Terraform deploys the **entire workshop platform** described in [the top-level README](../../README.md):
+This Terraform deploys the **entire lab platform** described in [the top-level README](../../README.md):
 
 - Hub VNet (Firewall, Bastion)
 - Two spoke VNets (eastus2 primary, westus3 passive) peered to the hub
-- Two AKS Standard clusters — private API server, Azure CNI Overlay powered by Cilium, 3 availability zones
+- Two AKS Standard Clusters — private API server, Azure CNI Overlay powered by Cilium, 3 availability zones
 - ACR Premium (zone-redundant, geo-replicated)
 - Two Key Vaults (regional)
 - Observability: Log Analytics, Azure Managed Prometheus, Azure Managed Grafana
-- Azure Front Door Standard + WAF in front of both clusters
+- Azure Front Door Standard + WAF in front of both Clusters
 - Workload Identity federation (one identity per workload namespace)
-- Azure Chaos Studio targets enabled on both clusters
+- Azure Chaos Studio targets enabled on both Clusters
 
 ## Layout
 
@@ -18,8 +18,7 @@ This Terraform deploys the **entire workshop platform** described in [the top-le
 infra/terraform/
 ├── bootstrap/             # one-shot: creates remote-state SA + GH OIDC SP
 ├── envs/
-│   ├── squad-template/      # copy → squad-XX/ for each participant squad
-│   └── squad-01/            # example, committed for reference
+│   └── lab/               # the single lab environment
 ├── modules/
 │   ├── naming/
 │   ├── network-hub/
@@ -39,21 +38,20 @@ infra/terraform/
 cd infra/terraform/bootstrap
 terraform init && terraform apply
 
-# 2. Copy the template for your squad
-cd ../envs
-cp -r squad-template squad-$SQUAD
-cd squad-$SQUAD
+# 2. Configure the lab env
+cd ../envs/lab
+cp terraform.tfvars.example terraform.tfvars
+$EDITOR terraform.tfvars   # set subscription_id, github_repo, admin_object_ids
 
-# 3. Fill in terraform.tfvars (subscription_id, squad_id, github_repo)
-$EDITOR terraform.tfvars
-
-# 4. Deploy
-terraform init -backend-config=../../bootstrap/backend.hcl
+# 3. Deploy
+terraform init \
+  -backend-config=../../bootstrap/backend.hcl \
+  -backend-config="key=lab-01.tfstate"
 terraform plan -out tfplan
 terraform apply tfplan
 ```
 
-Each `terraform apply` for a fresh squad takes ~25 minutes (Front Door + dual AKS dominate).
+A fresh `terraform apply` takes ~25 minutes (Front Door + dual AKS dominate).
 
 ## Module conventions
 

@@ -1,0 +1,6 @@
+subscription_id = "00000000-0000-0000-0000-000000000000" # your learning subscription
+lab_id          = "01"
+github_repo     = "your-user/aks-irl"
+admin_object_ids = [
+  # "<your Entra object id>",
+]

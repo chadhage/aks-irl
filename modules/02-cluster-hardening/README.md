@@ -1,6 +1,6 @@
 # Module 02 — Cluster Hardening & Access
 
-**Duration:** 60 min  |  **Level target:** L300, with L400 stretch  |  **Day:** 1
+**Time:** ~45 min  |  **Level target:** L300, with L400 stretch
 
 ## Outcomes
 - Configure Workload Identity for the app's KV access
@@ -9,10 +9,10 @@
 - Enable Azure Policy + Deployment Safeguards baseline
 - Verify Istio mesh injection on the `app` namespace
 
-## Whiteboard prompts (5 min)
-1. Where would a pod's identity be cached, and what is its TTL?
+## Things to think through first
+1. Where would a Pod's identity be cached, and what is its TTL?
 2. Why does Workload Identity beat AAD Pod Identity (deprecated) — and what was AAD Pod Identity's failure mode?
-3. If your namespace has `istio.io/rev: asm-1-23`, what happens to pods created before that label was set?
+3. If your namespace has `istio.io/rev: asm-1-23`, what happens to Pods created before that label was set?
 
 ## Step 1 — Workload Identity for the app
 The Terraform created an empty UAMI for the cluster. For the **app**, you create a UAMI per workload + a federated credential against the cluster's OIDC issuer.
@@ -28,7 +28,7 @@ az identity create -g $RG -n sita-storefront-api-mi
 UAMI_CLIENT=$(az identity show -g $RG -n sita-storefront-api-mi --query clientId -o tsv)
 UAMI_OID=$(az identity show -g $RG -n sita-storefront-api-mi --query principalId -o tsv)
 
-# Federate to the ServiceAccount that the api-node pods will use
+# Federate to the ServiceAccount that the api-node Pods will use
 az identity federated-credential create \
   --identity-name sita-storefront-api-mi \
   -g $RG -n api-node-fed \
@@ -53,7 +53,7 @@ az aks enable-addons -g $RG -n $AKS --addons azure-keyvault-secrets-provider
 Wait for the `csi-secrets-store-*` DaemonSet in `kube-system`.
 
 ## Step 3 — Cluster RBAC bindings
-Grant your participants the **Azure Kubernetes Service RBAC Reader** role for read-only operations and **Cluster User** to fetch credentials:
+Grant your own user the **Azure Kubernetes Service RBAC Reader** role for read-only operations and **Cluster User** to fetch credentials:
 ```bash
 ME=$(az ad signed-in-user show --query id -o tsv)
 CLUSTER_ID=$(az aks show -g $RG -n $AKS --query id -o tsv)
@@ -61,7 +61,7 @@ az role assignment create --role "Azure Kubernetes Service Cluster User Role" --
 az role assignment create --role "Azure Kubernetes Service RBAC Cluster Admin" --assignee-object-id $ME --scope $CLUSTER_ID
 ```
 
-> **[F]** This is intentionally heavy-handed for the workshop. In Module 05 we tighten it: rings get scoped to namespaces, not cluster admin.
+> This is intentionally heavy-handed for the lab. In Module 05 you tighten it: rings get scoped to namespaces, not Cluster admin.
 
 ## Step 4 — Verify Istio mesh injection
 ```bash
@@ -74,15 +74,15 @@ Use the **AKS baseline initiative**:
 ```bash
 SCOPE=$(az aks show -g $RG -n $AKS --query id -o tsv)
 az policy assignment create \
-  --name aks-baseline-${SQUAD:-01} \
+  --name aks-baseline-${LAB:-01} \
   --display-name "AKS baseline policies" \
   --scope $SCOPE \
   --policy-set-definition "/providers/Microsoft.Authorization/policySetDefinitions/a8640138-9b0a-4a28-b8cb-1666c838647d"
 ```
 
 ## Validation
-- `kubectl get sa api-node -n app` shows the SA annotated with the UAMI client ID (we'll create this in Module 03)
-- Policy compliance pane in Azure Portal shows a baseline initiative assigned to your cluster
+- `kubectl get sa api-node -n app` shows the SA annotated with the UAMI client ID (you'll create this in Module 03)
+- Policy compliance pane in Azure Portal shows a baseline initiative assigned to your Cluster
 - The ingress gateway has an external IP
 
 ## Stretch (L400)

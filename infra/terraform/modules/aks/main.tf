@@ -22,17 +22,17 @@ variable "enable_spot_pool" {
 }
 
 resource "azurerm_user_assigned_identity" "aks" {
-  name                = "${var.naming.program}-${var.naming.squad}-aks-mi-${var.region_short}-${var.naming.suffix}"
+  name                = "${var.naming.program}-${var.naming.lab}-aks-mi-${var.region_short}-${var.naming.suffix}"
   resource_group_name = var.resource_group_name
   location            = var.location
   tags                = var.tags
 }
 
 resource "azurerm_kubernetes_cluster" "this" {
-  name                              = "${var.naming.program}-${var.naming.squad}-aks-${var.region_short}-${var.naming.suffix}"
+  name                              = "${var.naming.program}-${var.naming.lab}-aks-${var.region_short}-${var.naming.suffix}"
   resource_group_name               = var.resource_group_name
   location                          = var.location
-  dns_prefix                        = "${var.naming.program}${var.naming.squad}${var.region_short}${var.naming.suffix}"
+  dns_prefix                        = "${var.naming.program}${var.naming.lab}${var.region_short}${var.naming.suffix}"
   kubernetes_version                = var.kubernetes_version
   sku_tier                          = "Standard"
   role_based_access_control_enabled = true

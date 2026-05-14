@@ -5,14 +5,14 @@ variable "primary_origin_host" { type = string }
 variable "secondary_origin_host" { type = string }
 
 resource "azurerm_cdn_frontdoor_profile" "this" {
-  name                = "${var.naming.program}-${var.naming.squad}-afd-${var.naming.suffix}"
+  name                = "${var.naming.program}-${var.naming.lab}-afd-${var.naming.suffix}"
   resource_group_name = var.resource_group_name
   sku_name            = "Standard_AzureFrontDoor"
   tags                = var.tags
 }
 
 resource "azurerm_cdn_frontdoor_endpoint" "this" {
-  name                     = "${var.naming.program}-${var.naming.squad}-${var.naming.suffix}"
+  name                     = "${var.naming.program}-${var.naming.lab}-${var.naming.suffix}"
   cdn_frontdoor_profile_id = azurerm_cdn_frontdoor_profile.this.id
   tags                     = var.tags
 }

@@ -66,7 +66,7 @@ resource "local_file" "backend_hcl" {
     resource_group_name  = "${azurerm_resource_group.state.name}"
     storage_account_name = "${azurerm_storage_account.state.name}"
     container_name       = "${azurerm_storage_container.state.name}"
-    # set 'key' per squad, e.g. key = "squad-01.tfstate"
+    # state file key for the lab env, e.g. key = "lab-01.tfstate"
   EOT
 }
 
@@ -74,7 +74,9 @@ output "instructions" {
   value = <<-EOT
     Remote state ready.
 
-    For each squad env, run:
-      terraform init -backend-config=../../bootstrap/backend.hcl -backend-config="key=squad-<id>.tfstate"
+    Initialize the lab env:
+      terraform -chdir=../envs/lab init \
+        -backend-config=../../bootstrap/backend.hcl \
+        -backend-config="key=lab-01.tfstate"
   EOT
 }

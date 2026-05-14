@@ -5,7 +5,7 @@ variable "location" { type = string }
 variable "replica_location" { type = string }
 
 resource "azurerm_container_registry" "this" {
-  name                          = "${var.naming.program}${var.naming.squad}acr${var.naming.suffix}"
+  name                          = "${var.naming.program}${var.naming.lab}acr${var.naming.suffix}"
   resource_group_name           = var.resource_group_name
   location                      = var.location
   sku                           = "Premium"

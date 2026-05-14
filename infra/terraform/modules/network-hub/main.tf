@@ -4,7 +4,7 @@ variable "resource_group_name" { type = string }
 variable "location" { type = string }
 
 resource "azurerm_virtual_network" "hub" {
-  name                = "${var.naming.program}-${var.naming.squad}-vnet-hub-${var.naming.suffix}"
+  name                = "${var.naming.program}-${var.naming.lab}-vnet-hub-${var.naming.suffix}"
   resource_group_name = var.resource_group_name
   location            = var.location
   address_space       = ["10.0.0.0/22"]

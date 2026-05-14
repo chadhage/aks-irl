@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Pre-flight checks for participants. Prints pass/fail per tool.
+# Pre-flight checks for the lab. Prints pass/fail per tool.
 set -u
 ok=0; fail=0
 check() {
