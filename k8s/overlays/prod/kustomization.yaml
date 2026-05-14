@@ -1,0 +1,29 @@
+# Prod ring — full replica counts, image tag promoted from canary via gated PR.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: app-prod
+resources:
+  - ../../base
+patches:
+  - target: { kind: Namespace, name: app }
+    patch: |
+      - op: replace
+        path: /metadata/name
+        value: app-prod
+  - target: { kind: Deployment, name: api-node }
+    patch: |
+      - op: replace
+        path: /spec/replicas
+        value: 4
+  - target: { kind: Deployment, name: web-react }
+    patch: |
+      - op: replace
+        path: /spec/replicas
+        value: 3
+images:
+  - name: ghcr.io/REPLACE/api-node
+    newTag: REPLACE_PROD_TAG
+  - name: ghcr.io/REPLACE/web-react
+    newTag: REPLACE_PROD_TAG
+  - name: ghcr.io/REPLACE/worker-python
+    newTag: REPLACE_PROD_TAG

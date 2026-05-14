@@ -1,0 +1,18 @@
+# The "root" Application — Argo CD reads this directory and creates the per-ring Applications below.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: storefront-root
+  namespace: argocd
+  finalizers: [resources-finalizer.argocd.argoproj.io]
+spec:
+  project: storefront
+  source:
+    repoURL: https://github.com/REPLACE/aks-briefing-with-labs.git
+    targetRevision: HEAD
+    path: gitops/apps
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }

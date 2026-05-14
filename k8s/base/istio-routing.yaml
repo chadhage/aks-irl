@@ -1,0 +1,57 @@
+# Istio Gateway + VirtualService for the storefront.
+# Module 03 uses a single subset (v1). Module 04 layers a v2 subset and shifts traffic.
+apiVersion: networking.istio.io/v1
+kind: Gateway
+metadata:
+  name: storefront-gw
+  namespace: app
+spec:
+  selector:
+    istio: aks-istio-ingressgateway-external
+  servers:
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts: ["*"]
+---
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: storefront
+  namespace: app
+spec:
+  hosts: ["*"]
+  gateways: [storefront-gw]
+  http:
+    - match:
+        - uri: { prefix: "/api/" }
+      route:
+        - destination: { host: api-node, subset: v1, port: { number: 8080 } }
+          weight: 100
+    - match:
+        - uri: { prefix: "/" }
+      route:
+        - destination: { host: web-react, port: { number: 8080 } }
+---
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: api-node
+  namespace: app
+spec:
+  host: api-node
+  trafficPolicy:
+    connectionPool:
+      tcp: { maxConnections: 100 }
+      http: { http2MaxRequests: 1000, maxRequestsPerConnection: 10 }
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+  subsets:
+    - name: v1
+      labels: { version: v1 }
+    - name: v2
+      labels: { version: v2 }

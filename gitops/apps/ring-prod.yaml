@@ -1,0 +1,20 @@
+# Prod ring — auto-sync DISABLED to require human approval.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ring-prod
+  namespace: argocd
+  annotations:
+    notifications.argoproj.io/subscribe.on-sync-succeeded.slack: storefront-prod
+spec:
+  project: storefront
+  source:
+    repoURL: https://github.com/REPLACE/aks-briefing-with-labs.git
+    targetRevision: HEAD
+    path: k8s/overlays/prod
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: app-prod
+  syncPolicy:
+    # NOTE: automated.* intentionally omitted — manual sync only.
+    syncOptions: [CreateNamespace=true]

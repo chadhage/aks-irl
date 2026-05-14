@@ -1,0 +1,13 @@
+**/.terraform/
+**/.terraform.lock.hcl
+**/terraform.tfvars
+**/*.tfstate
+**/*.tfstate.*
+**/backend.hcl
+**/tfplan
+node_modules/
+__pycache__/
+.DS_Store
+.vscode/
+.idea/
+*.log

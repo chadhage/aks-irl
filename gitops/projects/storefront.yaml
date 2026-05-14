@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: storefront
+  namespace: argocd
+spec:
+  description: SITA workshop storefront app
+  sourceRepos:
+    - https://github.com/REPLACE/aks-briefing-with-labs.git
+  destinations:
+    - namespace: 'app-*'
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'

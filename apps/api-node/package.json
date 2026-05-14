@@ -1,0 +1,17 @@
+{
+  "name": "api-node",
+  "version": "1.0.0",
+  "description": "Product API for the SITA AKS workshop",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "pino": "^9.4.0",
+    "pino-http": "^10.3.0",
+    "prom-client": "^15.1.3"
+  }
+}
