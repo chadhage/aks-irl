@@ -17,19 +17,20 @@ on:
 permissions:
   id-token: write   # for Azure OIDC
   contents: write   # so the job can bump kustomization tags
+  pull-requests: write
 
 env:
   AZURE_CLIENT_ID:       ${{ secrets.AZURE_CLIENT_ID }}
   AZURE_TENANT_ID:       ${{ secrets.AZURE_TENANT_ID }}
   AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-  ACR_NAME:              ${{ vars.ACR_NAME }}   # e.g. sitap01acreus2a1b
+  ACR_NAME:              ${{ vars.ACR_NAME }}
 
 jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        app: [api-node, web-react, worker-python]
+        app: [gateway-java, parser-cpp, ops-console]
     steps:
       - uses: actions/checkout@v4
       - uses: azure/login@v2
@@ -68,7 +69,7 @@ jobs:
         run: |
           SHA="${GITHUB_SHA::7}"
           cd k8s/overlays/canary
-          for app in api-node web-react worker-python; do
+          for app in gateway-java parser-cpp ops-console; do
             sed -i "s|newTag:.*|newTag: $SHA|" kustomization.yaml || true
           done
           git config user.name  "github-actions[bot]"
@@ -84,12 +85,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Soak
-        run: sleep 300  # 5 min for Argo CD to sync canary
-      - name: Run smoke
+      - name: Install ncat
+        run: sudo apt-get update && sudo apt-get install -y ncat
+      - name: Wait for Argo sync
+        run: sleep 300
+      - name: Socket-soak smoke test
         env:
-          TARGET_URL: ${{ vars.CANARY_URL }}
-        run: ./scripts/smoke.sh
+          NLB_IP: ${{ vars.CANARY_NLB_IP }}
+          NLB_PORT: "4561"
+        run: ./scripts/smoke.sh tcp "$NLB_IP" "$NLB_PORT" 200 --duration 60s
 
   propose-prod:
     needs: smoke-canary
@@ -105,11 +109,14 @@ jobs:
           BR="auto/prod-bump-$SHA"
           git checkout -b $BR
           cd k8s/overlays/prod
-          for app in api-node web-react worker-python; do
+          for app in gateway-java parser-cpp ops-console; do
             sed -i "s|newTag:.*|newTag: $SHA|" kustomization.yaml
           done
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git commit -am "ci: bump prod to ${SHA}"
           git push -u origin $BR
-          gh pr create --title "Bump prod to $SHA" --body "Automated promotion after canary smoke passed." --base main --head $BR --label "ring:prod"
+          gh pr create \
+            --title "Bump prod to $SHA" \
+            --body "Automated promotion after canary socket-soak passed." \
+            --base main --head $BR --label "ring:prod"
