@@ -5,16 +5,16 @@ metadata:
   name: ring-prod
   namespace: argocd
   annotations:
-    notifications.argoproj.io/subscribe.on-sync-succeeded.slack: storefront-prod
+    notifications.argoproj.io/subscribe.on-sync-succeeded.slack: messaging-prod
 spec:
-  project: storefront
+  project: messaging
   source:
     repoURL: https://github.com/REPLACE/aks-briefing-with-labs.git
     targetRevision: HEAD
     path: k8s/overlays/prod
   destination:
     server: https://kubernetes.default.svc
-    namespace: app-prod
+    namespace: messaging-prod
   syncPolicy:
     # NOTE: automated.* intentionally omitted — manual sync only.
     syncOptions: [CreateNamespace=true]

@@ -1,92 +1,104 @@
-# Module 07 — Surviving an Extrinsic Outage
+# Module 07 — Extrinsic Outage & Cross-Region Failover
 
-**Time:** ~60 min  |  **Level target:** L300 → L400
+**Time:** ~90 min wall-clock  |  **Level target:** L300
 
-**Success criterion this satisfies:** #5 — *Survive an extrinsic outage that causes service interruptions.*
+**Success criterion this satisfies:** #5 — *Survive an extrinsic outage with cross-region failover.*
 
-> **Definition.** "Extrinsic" means the cause is **outside your cluster** — region offline, dependent PaaS down, DNS poisoning, edge ISP failure. Your primary cluster is *gone or unreachable*; you must move customers elsewhere.
+## 1. Outcomes
 
-## Outcomes
-- Pre-stage the secondary cluster in westus3 with the same workloads (warm-passive)
-- Promote it to active behind Azure Front Door
-- Recover when the primary returns, **without dual-writing** the unprepared way
-- Calculate observed RTO and RPO
+You can:
 
-## Things to think through first
-1. What state lives only in the cluster? Where is the long-lived state actually persisted?
-2. Why is **warm passive** preferred to **cold standby** for a 4× growth workload?
-3. What would a true active-active design require that warm-passive doesn't?
+- Bootstrap the **secondary** cluster (westus3) so it can serve the same workload as primary
+- Move active socket traffic from primary to secondary by swapping a DNS record
+- Quantify the RTO (time for sockets to reconnect to secondary) and RPO (messages in-flight at cutover)
+- Recover back to primary in a controlled window — Postgres replication lag drained first
+- Document one cross-region incident
 
-## Pre-flight (10 min) — warm the secondary
+## 2. Where this fits in the replatform story
+
+Skybridge's regulator imposes RTO ≤ 30 min and RPO ≤ 1 min for the message journal. The legacy stack technically has a passive datacentre but the failover playbook is "tell the airlines to reconnect to a different VIP and pray". This module turns that into a measured, reversible operation.
+
+## 3. Level target
+
+- **L300:** Surgical DNS-swap failover and measured recovery.
+- **L400:** Add a "brutal" `az aks stop` scenario; quantify the difference; design a third-region cold standby strategy.
+
+## 4. Talk track *(trainer)*
+
+Two ideas to lead with:
+1. **RTO for a socket workload is not "the LB is up".** It's "the displaced sockets have reconnected and resumed message exchange". Measure end-to-end, not edge.
+2. **Postgres geo-replication is async.** Anything in-flight at the moment of failover is at risk. Communicate that to the customer — the architecture caps loss, it doesn't eliminate it.
+
+## 5. Demo cues *(trainer)*
+
+- Walk through the DNS swap on your demo lab first so the room sees the mechanism.
+- During the wait for sockets to reconnect, open the Postgres replica's lag panel and narrate what RPO looks like in real time.
+
+## 6. Participant steps
+
+### 6.1 Bootstrap Argo CD on the secondary cluster
+Same as M03, against the secondary cluster name & RG. Verify `messaging-canary` and `messaging-prod` are running v1 with synthetic sockets idle (no live traffic yet).
+
+### 6.2 Confirm Postgres geo-replica health
 ```bash
-# Apply the same Argo CD bootstrap pointed at the secondary cluster
-RG2=$(terraform output -raw secondary_resource_group)
-AKS2=$(terraform output -raw aks_secondary_name)
-az aks command invoke -g $RG2 -n $AKS2 --command "kubectl create namespace argocd"
-az aks command invoke -g $RG2 -n $AKS2 --command "kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v2.12.4/manifests/install.yaml"
-# ... same project + apps as Module 03
+az postgres flexible-server replica list -g $RG_PRIMARY --name $PG_PRIMARY -o table
+# lag should be < 5 s
 ```
 
-By construction, the secondary cluster runs the same prod ring images (Argo CD pulls from the same GitOps repo). The Front Door origin group already has it as **priority 2**.
-
+### 6.3 Start sustained load against the primary
 ```bash
-# Confirm both origins are healthy in the Azure Portal:
-# Front Door → Origin groups → apps → both green
+./scripts/smoke.sh tcp $NLB_PRIMARY 4561 500 --keep-alive &
+```
+Let it run 5 min; confirm steady RTT in Grafana.
+
+### 6.4 Surgical failover — swap the DNS record
+You created `messaging.<lab>.example.com` in M03 pointing at `$NLB_PRIMARY`. Swap it to `$NLB_SECONDARY`:
+```bash
+az network dns record-set a update -g $DNS_RG -z $DNS_ZONE -n messaging \
+  --set 'aRecords=[{"ipv4Address":"'$NLB_SECONDARY'"}]' --ttl 30
+```
+Start a stopwatch. Wait for displaced sockets to reconnect (your generator's clients try every 5 s).
+
+**Promote the Postgres replica:**
+```bash
+az postgres flexible-server replica promote -g $RG_SECONDARY --name $PG_SECONDARY
 ```
 
-## Step 1 — Simulate a primary region outage
-Two ways to do this, pick one:
+### 6.5 Measure RTO and RPO
+- **RTO:** seconds from DNS swap to "≥ 99 % of expected sockets are connected on secondary"
+- **RPO:** messages produced on primary in the last `replication_lag` seconds — count from the generator's local log
 
-**Surgical:** Disable the primary origin in Front Door, forcing failover within 30 s.
+### 6.6 (Optional) Brutal failover
 ```bash
-FD_RG=$(terraform output -raw primary_resource_group)
-FD_PROFILE=$(az afd profile list -g $FD_RG --query "[0].name" -o tsv)
-az afd origin update --profile-name $FD_PROFILE -g $FD_RG \
-  --origin-group-name apps --origin-name primary --enabled-state Disabled
+az aks stop -g $RG_PRIMARY -n $AKS_PRIMARY
 ```
+Watch what changes — TCP `RST` vs graceful close changes how fast clients reconnect.
 
-**Brutal:** Stop the primary AKS cluster (preserves state, instantly kills traffic).
-```bash
-az aks stop -g $RG -n $AKS
-```
+### 6.7 Recover
+1. Drain replication lag (now reversed): wait until secondary→primary lag is < 5 s.
+2. Promote primary back to read-write.
+3. Swap DNS back to `$NLB_PRIMARY`.
+4. Monitor that the primary does not "cold-start storm" — HPA may need to scale gateway up before the swap.
 
-Start a generator against Front Door:
-```bash
-hey -z 5m -c 30 $FD/api/products
-```
+### 6.8 Document
+Write `modules/07-extrinsic-outage/incident-region.md`:
+- Observed RTO / RPO
+- What surprised you
+- What you would change to halve the RTO
 
-## Step 2 — Watch the failover
-- Front Door **probe failure** for primary within ~30 s
-- Traffic shifts to secondary (priority 2)
-- Customer error rate spikes briefly, then recovers
-- Capture the exact recovery time — that's your **observed RTO**
+## 7. Validation
 
-## Step 3 — Recover
-Re-enable primary:
-```bash
-az afd origin update ... --enabled-state Enabled
-# or
-az aks start -g $RG -n $AKS
-```
+- Secondary cluster served the entire workload for at least 5 minutes.
+- Recorded RTO < 5 min and RPO measured in messages (not "unknown").
+- Recovered without flooding primary.
+- No Postgres split-brain.
 
-Front Door rebalances by priority once primary is healthy. **Do not let traffic flood back instantly** — set primary `weight` low first, then ramp.
+## 8. Stretch (L400)
 
-## Step 4 — Compute RTO and RPO
-- **RTO (Recovery Time Objective):** how long was the customer error rate above SLO?
-- **RPO (Recovery Point Objective):** for this stateless app, RPO ≈ 0 because the data store is external. For a stateful app, RPO is driven by storage replication; document the answer for *your imagined* persistence (Cosmos DB multi-region writes, Azure SQL geo-replication, etc).
+- Replace the DNS swap with **Traffic Manager** priority-based failover and compare the RTO.
+- Add a third "cold" region (centralus) that you provision on demand with `terraform apply` during the drill; measure cold-start RTO.
+- Build a runbook that the customer NOC can execute without you in the room. Rehearse it.
 
-## Validation
-- Curl loop against Front Door shows non-zero responses throughout the experiment
-- Grafana shows traffic shift from primary to secondary clusters
-- Front Door diagnostic logs confirm probe-driven failover
-- Write your observed RTO/RPO into `modules/07-extrinsic-outage/incident-region.md`
+## 9. Cleanup
 
-## Stretch (L400)
-- Replace warm-passive with **active-active**: weight both origins 50/50; introduce a shared session store (Redis Enterprise active-geo).
-- Implement **manual failover gates** (don't trust autoflip alone). When *should* an operator override?
-- Add a **stuck transaction** scenario: a Service Bus message in-flight at failover. Where does it land?
-
-## Cleanup
-- Re-enable primary origin
-- Stop the load generator
-- Set Front Door weights back to default
+DNS back to primary. Stop the synthetic-load generator. Scale secondary cluster's `gateway-java` STS back to 2 replicas to save cost.

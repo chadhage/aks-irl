@@ -1,12 +1,11 @@
-# The "root" Application — Argo CD reads this directory and creates the per-ring Applications below.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: storefront-root
+  name: messaging-root
   namespace: argocd
   finalizers: [resources-finalizer.argocd.argoproj.io]
 spec:
-  project: storefront
+  project: messaging
   source:
     repoURL: https://github.com/REPLACE/aks-briefing-with-labs.git
     targetRevision: HEAD

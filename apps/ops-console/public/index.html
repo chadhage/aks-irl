@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Skybridge Messaging — Ops Console</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { --bg: #0b1020; --fg: #e6e9f5; --accent: #4cc2ff; --warn: #f6c453; --bad: #ef4444; }
+    body { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--bg); color: var(--fg); margin: 0; padding: 2rem; }
+    h1 { color: var(--accent); margin: 0 0 1rem; }
+    .pill { display: inline-block; padding: .15rem .6rem; border-radius: 999px; background: #1f2745; font-size: .85rem; margin-left: .5rem; }
+    .v2 { background: #5b2a86; }
+    table { border-collapse: collapse; margin-top: 1rem; width: 100%; max-width: 960px; }
+    td, th { padding: .5rem .9rem; border-bottom: 1px solid #1f2745; text-align: left; }
+    th { color: var(--accent); }
+    .err { color: var(--bad); }
+    .ok { color: #66e0a3; }
+  </style>
+</head>
+<body>
+  <h1>Skybridge Messaging — Ops Console
+    <span id="version" class="pill">loading…</span>
+    <span id="region" class="pill"></span>
+  </h1>
+  <p>Live view of the <code>gateway-java</code> control plane. Long-lived TCP sockets are accepted on port 4561 (TLS on 4562) at the NLB.</p>
+  <div id="content">Loading session telemetry…</div>
+
+  <script>
+    async function load() {
+      const out = document.getElementById('content');
+      const ver = document.getElementById('version');
+      const reg = document.getElementById('region');
+      try {
+        const r = await fetch('/api/healthz');
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const data = await r.json();
+        ver.textContent = data.version;
+        ver.className = 'pill ' + (String(data.version).startsWith('v2') ? 'v2' : '');
+        reg.textContent = data.region;
+
+        const m = await fetch('/api/metrics').then(x => x.text());
+        const active = (m.match(/gateway_active_connections{[^}]*}\s+(\d+)/) || [, '0'])[1];
+        const ok = (m.match(/gateway_messages_total{[^}]*result="ok"[^}]*}\s+(\d+)/) || [, '0'])[1];
+        const err = (m.match(/gateway_messages_total{[^}]*result="err"[^}]*}\s+(\d+)/) || [, '0'])[1];
+        out.innerHTML = '<table><tbody>' +
+          '<tr><th>Active sockets</th><td class="ok">' + active + '</td></tr>' +
+          '<tr><th>Messages OK</th><td class="ok">' + ok + '</td></tr>' +
+          '<tr><th>Messages errored</th><td class="err">' + err + '</td></tr>' +
+          '</tbody></table>';
+      } catch (e) {
+        out.innerHTML = '<p class="err">Error loading telemetry: ' + e.message + '</p>';
+      }
+    }
+    load();
+    setInterval(load, 3000);
+  </script>
+</body>
+</html>

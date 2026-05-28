@@ -1,69 +1,93 @@
 # Module 00 — Envisioning & Architecture Decisions
 
-**Time:** ~30 min  |  **Level target:** L300 baseline, L400 stretch
+**Time:** ~45 min (trainer-facilitated)  |  **Level target:** L300 baseline · L400 stretch
 
-## Outcomes
-By the end you will have:
-- Translated a fictional customer brief into an **Architecture Decision Record (ADR)**
-- Defined SLOs, error budgets, and ring topology
-- Sketched the network, identity, and data flows (whiteboard, draw.io, or just bullet points)
-- Made (and **documented**) the irreversible Day-0 decisions
+## 1. Outcomes
 
-## The brief — your fictional customer
+By the end you can:
 
-> **Contoso Storefront** is launching a customer-facing product catalog API and lightweight web UI. They expect ~500 RPS at launch, growing 4× over a year, with a P95 latency SLO of **300 ms** and a monthly availability SLO of **99.9 %**. They are subject to PCI-adjacent compliance: no public API server, secrets in Key Vault, audit logs retained 30 days. They want **A/B testing** to validate features, **safe rollouts**, and **multi-region survival** of a single Azure region failure.
+- Restate the Skybridge legacy → target transition in 2 sentences without notes
+- Defend the **9 Day-0 AKS decisions** against a credible alternative for each
+- Write SLIs/SLOs that reflect a **socket-based**, real-time messaging workload (not an HTTP API)
+- Commit an Architecture Decision Record (ADR) that the platform & app teams will both sign off on
 
-## Step 1 — Frame the problem (10 min)
+## 2. Where this fits in the replatform story
 
-Write down (in your notes, the ADR scratchpad, or a whiteboard):
-1. **Users & SLIs** — who talks to it, what does success mean per request?
-2. **Trust boundaries** — where does customer traffic enter? Where does the platform team's authority end and the app team's begin?
-3. **Failure domains** — what counts as "the platform is up" vs "the app is up"?
+This is where the cohort agrees on the **shape of the target architecture** before anyone runs `terraform apply`. Every later module references decisions made here. Get the Day-0 decisions wrong and Module 03–07 will fight you.
 
-> Keep the platform-vs-application split sharp. The Terraform in this repo owns the *platform*; GitOps owns the *application*. Many enterprise outages happen at the seam — the right framing now prevents debate later.
+Read [SCENARIO.md](../../SCENARIO.md) before starting if you haven't.
 
-## Step 2 — Day-0 decisions (15 min)
+## 3. Level target
 
-Day-0 decisions are *hard or impossible to change later without rebuilding*. Lock them in.
+- **L300:** Make the decision, write down the alternative considered, link to one piece of evidence.
+- **L400:** Quantify the trade-off (cost, blast radius, lead time to change later) and tie it to a Skybridge-specific risk.
 
-| Decision | Workshop default | Why |
-|---|---|---|
-| **Cluster SKU** | AKS Standard | Need full control of node pools, spot, mesh revisions, private API. |
-| **API server access** | Private Cluster | PCI-adjacent; no public control plane. |
-| **Pod network** | Azure CNI **Overlay** (Cilium dataplane) | Scales without VNet exhaustion; required for spot/NAP. |
-| **Service mesh** | Istio (managed addon) | Native A/B + mTLS without a third-party install. |
-| **Node OS** | Azure Linux | Smaller footprint, faster boot — important for autoscale latency. |
-| **Zones** | 1-2-3 across all pools | 99.95 % control-plane SLA + zone-survival. |
-| **Region pair** | eastus2 (primary) + westus3 (passive) | Both support all required features; geo-diverse. |
-| **Identity** | Workload Identity + Entra RBAC | No static creds; aligns with PCI direction. |
-| **Secrets** | Azure Key Vault via CSI Secrets Store | Single source of truth, audited. |
-| **Registry** | ACR Premium, geo-replicated, content-trust on | Required for multi-region pull + supply chain. |
+## 4. Talk track *(trainer, ~10 min)*
 
-Write the **rationale** for any deviation from these defaults in the ADR (template below). Saying "we picked Y because X" is L300. Defending it against the alternative is L400.
+Frame the room: this customer is *not* greenfield. They have:
+- a real wire protocol (Type B / SITATEX) with real airline endpoints that **cannot be told to reconnect during business hours**;
+- a 24×7 NOC that watches dashboards built around socket counts and message latency, not RPS;
+- a regulator-imposed RTO of 30 min and RPO of < 1 min for the message journal.
 
-## Step 3 — SLOs and error budget (10 min)
+The temptation is to copy a generic "AKS for a web API" reference architecture. Resist. The two decisions that change everything for *this* customer are:
+1. **Stateful gateway tier** — `gateway-java` is a StatefulSet, not a Deployment, and it sits behind an Azure **Standard Load Balancer for TCP** (not Front Door, not Application Gateway). Sockets are sacred.
+2. **State stays out of the cluster** — PostgreSQL is **Azure Database for PostgreSQL — Flexible Server** with zone-redundant HA, not a Helm-chart Postgres in the cluster. The message journal cannot lose minutes.
 
-| SLI | Definition | SLO | Error budget (30d) |
+Walk the room through those two and the rest of the Day-0 table falls into place.
+
+## 5. Demo cues *(trainer)*
+
+- Show the [target architecture diagram](../../README.md#target-architecture-end-state) on the projector while you talk through the talk track.
+- Open the customer's legacy diagram in [SCENARIO.md](../../SCENARIO.md#current-state-legacy-stack) side by side — point at each box and say what replaces it.
+- Open [`adr-template.md`](adr-template.md) and fill in the **header + one decision row** live so participants see the shape they're aiming for.
+
+## 6. Participant steps
+
+### 6.1 Read the brief (5 min)
+Skim [SCENARIO.md](../../SCENARIO.md) and the customer's stated SLOs.
+
+### 6.2 Walk the 9 Day-0 decisions (20 min)
+The trainer drives the discussion; you capture each decision and at least one *rejected* alternative.
+
+| # | Decision | Workshop default | Skybridge-specific rationale |
 |---|---|---|---|
-| Availability | % of `/api/*` responses with status < 500 | 99.9 % | 43m 12s |
-| Latency | % of `/api/*` requests with P95 ≤ 300 ms | 99.0 % | n/a |
-| Mesh health | % of Pods passing readiness | 99.5 % | n/a |
+| 1 | **Cluster SKU** | AKS Standard | Need spot, mesh revision pinning, private API, NAP — Automatic doesn't expose enough levers yet. |
+| 2 | **API server access** | Private cluster | Audit + regulator expectation; sockets traverse a separate NLB anyway. |
+| 3 | **Pod network** | Azure CNI Overlay (Cilium dataplane) | Avoids VNet IP exhaustion as parser auto-scales. |
+| 4 | **Service mesh** | Istio managed addon (revision pinned) | Header-based A/B for parser cohorts; mTLS Pod-to-Pod by default. |
+| 5 | **Node OS** | Azure Linux | Faster boot improves zone-failover RTO for reconnecting sockets. |
+| 6 | **Zones** | 1+2+3 across all pools | 99.95 % SLA + protects against single-AZ loss. |
+| 7 | **Region pair** | eastus2 (primary) + westus3 (passive) | Postgres Flex geo-replica supported; latency to airline hubs acceptable. |
+| 8 | **Identity** | Workload Identity + Entra | Postgres can authenticate via Entra → no long-lived DB passwords. |
+| 9 | **Secrets** | Key Vault CSI | Single source of truth; rotates without Pod restart for many secret types. |
 
-These directly drive Module 06 and Module 07 — when the SLO is at risk, you fail forward (intrinsic outage) or fail over (extrinsic outage).
+### 6.3 Define the SLIs/SLOs (10 min)
+Note these are **not** HTTP SLIs. The legacy NOC will not accept "% of 200 responses".
 
-## Step 4 — Write the ADR (15 min)
+| SLI | Definition | SLO | 30-day budget |
+|---|---|---|---|
+| **Socket establishment success** | % of TCP `SYN` from known airline source IPs that reach `ESTABLISHED` in < 2 s | 99.95 % | 21m 36s |
+| **Message round-trip latency P99** | `gateway-java` receives envelope → ACK back to client | ≤ 250 ms | n/a |
+| **Parser decode success** | `parser_decoded_total / (decoded + failed)` | 99.99 % | n/a |
+| **Journal write durability** | Postgres acknowledged write within 1 s | 99.99 % | 4m 18s |
+| **Reconnect storm absorption** | After a zone drain, ≥ 99 % of displaced sockets reconnect within 30 s | 99 % | n/a |
 
-Copy [`adr-template.md`](adr-template.md) to `adr-001-aks-platform.md`, fill it in, and commit. The ADR is **evaluated in the knowledge check**.
+### 6.4 Write the ADR (10 min)
+Copy [`adr-template.md`](adr-template.md) → `modules/00-envisioning/adr-001-aks-platform.md`. Fill in **at least 3** of the 9 Day-0 decisions in full, including the rejected alternative.
 
-## Stretch (L400)
+## 7. Validation
 
-- Defend Azure CNI Overlay vs Azure CNI VNet-routable in writing. When would you pick the latter?
-- Design a "blast radius" diagram: if a single Entra app credential leaks, which resources can it reach?
-- Map this design to the [AKS WAF guide](https://learn.microsoft.com/azure/well-architected/service-guides/azure-kubernetes-service) — score Reliability and Security pillars 1–5 and justify.
+- `modules/00-envisioning/adr-001-aks-platform.md` exists with decisions, rationale, and rejected alternatives.
+- You can answer aloud: *what's our latency SLO and what's the 30-day error budget?*
+- You can answer aloud: *what protects us from a regional Azure outage? what protects us from a bad code release?* — different answers, different modules.
 
-## Validation
-- ADR committed under `modules/00-envisioning/adr-001-aks-platform.md`
-- Each Day-0 decision has at least one alternative considered + rejected
+## 8. Stretch (L400)
 
-## Cleanup
-None — keep the ADR. You'll reference it in every subsequent module.
+- Defend Azure CNI Overlay vs Azure CNI VNet-routable in writing for **this** workload.
+- Draw a blast-radius diagram: if the gateway's Workload Identity federated credential leaks, what can the attacker do?
+- Score this architecture against the [AKS WAF service guide](https://learn.microsoft.com/azure/well-architected/service-guides/azure-kubernetes-service) Reliability and Security pillars 1–5 with one-sentence justifications.
+- Add a 10th Day-0 row: *Postgres connection pooling strategy* — pgBouncer sidecar vs in-Pod HikariCP vs Azure Database for PostgreSQL built-in pooler. Pick one, defend it.
+
+## 9. Cleanup
+
+None. Keep the ADR — every later module references it.

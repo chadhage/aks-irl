@@ -38,7 +38,7 @@ resource "azurerm_resource_group" "state" {
   location = var.location
   tags = {
     program  = "sita"
-    workshop = "enterprise-scale-aks-irl"
+    workshop = "airline-messaging-replatform-workshopplus"
     purpose  = "tfstate"
   }
 }

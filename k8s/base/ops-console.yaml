@@ -1,16 +1,17 @@
+# ops-console: HTTP-only React-style operator console. Fronted by Front Door.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: web-react
-  namespace: app
-  labels: { app: web-react }
+  name: ops-console
+  namespace: messaging
+  labels: { app: ops-console, tier: control-plane }
 spec:
   replicas: 2
   selector:
-    matchLabels: { app: web-react }
+    matchLabels: { app: ops-console }
   template:
     metadata:
-      labels: { app: web-react }
+      labels: { app: ops-console, tier: control-plane }
     spec:
       automountServiceAccountToken: false
       securityContext:
@@ -18,7 +19,7 @@ spec:
         seccompProfile: { type: RuntimeDefault }
       containers:
         - name: web
-          image: ghcr.io/REPLACE/web-react:v1
+          image: REPLACE_ACR/ops-console:v1
           ports:
             - name: http
               containerPort: 8080
@@ -35,10 +36,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: web-react
-  namespace: app
+  name: ops-console
+  namespace: messaging
 spec:
-  selector: { app: web-react }
+  selector: { app: ops-console }
   ports:
     - name: http
       port: 8080
@@ -47,9 +48,9 @@ spec:
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: web-react
-  namespace: app
+  name: ops-console
+  namespace: messaging
 spec:
   minAvailable: 1
   selector:
-    matchLabels: { app: web-react }
+    matchLabels: { app: ops-console }

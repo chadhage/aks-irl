@@ -1,109 +1,111 @@
-# Module 04 — A/B Testing with Istio
+# Module 04 — A/B Testing Parser Versions
 
-**Time:** ~60 min  |  **Level target:** L300 → L400
+**Time:** ~75 min  |  **Level target:** L300
 
-**Success criterion this satisfies:** #2 — *Extend the MVP and add A/B testing.*
+**Success criterion this satisfies:** #2 — *Run an A/B test of a new parser version against live traffic.*
 
-## Outcomes
-- Deploy `api-node:v2` alongside v1 in the same namespace
-- Split traffic 90/10 via Istio `VirtualService` weights
-- Route a specific user cohort to v2 via **header-based** match
-- Measure per-version P95 latency and error rate in Grafana, then promote v2
+## 1. Outcomes
 
-## Things to think through first
-1. Where in the request path does the version split actually happen — at Front Door, ingress gateway, sidecar, or all three?
-2. Why is the **DestinationRule** mandatory even if you only have one subset?
-3. If v2 has a memory leak, what's your kill switch and how fast can you pull it?
+You can:
 
-## Step 1 — Build & push v2
-The base app honors `APP_VERSION` and exposes a different payload (`rating` field) in v2.
+- Run `parser-cpp:v1` and `parser-cpp:v2` side-by-side as two subsets of the same Istio destination
+- Shift gateway → parser traffic by **weight** (e.g., 90/10) without redeploying the gateway
+- Switch to **header-based** routing (`x-cohort: beta`) so a chosen airline cohort hits v2 only
+- Read a Grafana panel split by `parser_version` to compare RTT and decode-error rates
+- Cut traffic back to 100 % v1 in under 30 seconds (the kill switch)
 
+## 2. Where this fits in the replatform story
+
+The customer wants to ship a new routing rule into the C++ decoder without telling airlines anything. The whole point of running on a mesh is that we can do this **at the parser leg only** — the gateway and its sockets don't move. This is the exact pattern they'll use every quarter for the rest of the year.
+
+## 3. Level target
+
+- **L300:** Weight-based and header-based routing both demonstrated; Grafana panel split by version.
+- **L400:** Add an Argo Rollouts canary with automatic SLO-based promotion; encode the routing decision as a `WasmPlugin`.
+
+## 4. Talk track *(trainer)*
+
+Why we A/B at the **parser** not the **gateway**:
+- Moving sockets to a new gateway version means tearing down TCP connections — visible to airlines, ops-team-noticeable.
+- The parser is stateless per request. Shifting 10 % of *decode* calls to v2 changes nothing visible at the airline.
+
+This is one of the highest-leverage architectural decisions in the whole replatform: by splitting "termination" from "decoding" we made parser releases boring.
+
+## 5. Demo cues *(trainer)*
+
+- Show the current `VirtualService` (100 % v1), edit it live to 90/10, and watch Grafana split.
+- Then switch to header match and show in the ops console that messages tagged `x-cohort: beta` hit v2.
+
+## 6. Participant steps
+
+### 6.1 Build and push parser-cpp:v2
 ```bash
-docker build --build-arg APP_VERSION=v2 -t $ACR/api-node:v2 apps/api-node
-docker push $ACR/api-node:v2
+docker build --build-arg APP_VERSION=v2 -t $ACR/parser-cpp:v2 apps/parser-cpp
+docker push $ACR/parser-cpp:v2
 ```
 
-## Step 2 — Deploy the v2 Deployment
-Apply this directly via `kubectl` (we're in dev — short feedback loop):
+### 6.2 Deploy v2 alongside v1
+Create `k8s/base/parser-cpp-v2.yaml` (copy `parser-cpp.yaml`, change `name: parser-cpp-v2`, `version: v2` labels, `image: ...:v2`, `APP_VERSION=v2`). Add to `k8s/base/kustomization.yaml`. Push.
+
+### 6.3 Switch to 90/10 weighted routing
+Edit the `VirtualService parser-cpp` in `k8s/base/istio-routing.yaml`:
 ```yaml
-# k8s/overlays/dev/api-node-v2.yaml  -- add to overlay and commit, OR apply inline for the lab
-apiVersion: apps/v1
-kind: Deployment
-metadata: { name: api-node-v2, namespace: app-dev, labels: { app: api-node, version: v2 } }
-spec:
-  replicas: 2
-  selector: { matchLabels: { app: api-node, version: v2 } }
-  template:
-    metadata:
-      labels: { app: api-node, version: v2 }
-    spec:
-      containers:
-      - name: api
-        image: REPLACE/api-node:v2
-        ports: [{ containerPort: 8080, name: http }]
-        env: [{ name: APP_VERSION, value: v2 }]
-        readinessProbe: { httpGet: { path: /readyz, port: http } }
-        resources:
-          requests: { cpu: 50m, memory: 64Mi }
-          limits:   { cpu: 500m, memory: 256Mi }
+http:
+  - route:
+      - destination: { host: parser-cpp, subset: v1, port: { number: 9100 } }
+        weight: 90
+      - destination: { host: parser-cpp, subset: v2, port: { number: 9100 } }
+        weight: 10
 ```
-
-## Step 3 — Weighted split (90 → 10)
-The base `VirtualService` sends 100% to subset `v1`. Patch it:
-```yaml
-# Apply against the dev ring
-spec:
-  http:
-    - match: [{ uri: { prefix: "/api/" } }]
-      route:
-        - destination: { host: api-node, subset: v1 }
-          weight: 90
-        - destination: { host: api-node, subset: v2 }
-          weight: 10
-```
-
-Validate:
+Push. Argo syncs. Watch:
 ```bash
-for i in {1..200}; do curl -s http://$IP/api/products | jq -r .version; done | sort | uniq -c
-# expect ~180 v1, ~20 v2
+for i in {1..200}; do
+  printf 'COHORT default\nMSG QU/SYDYYXY/JFKYYXY/HDQTSXY/T/%d\n' $i | ncat $NLB 4561 -w 2
+done | grep ACK | sort | uniq -c
 ```
+Expect ~90/10 mix in the responses.
 
-## Step 4 — Header-based routing (the L400 trick)
-Send all customers in a cohort to v2 via a header set at the edge (or by your auth gateway):
+### 6.4 Switch to header-based routing
+Replace the `http:` block with:
 ```yaml
-spec:
-  http:
-    - match:
-        - uri: { prefix: "/api/" }
-          headers: { x-cohort: { exact: "beta" } }
-      route:
-        - destination: { host: api-node, subset: v2 }
-    - match: [{ uri: { prefix: "/api/" } }]
-      route:
-        - destination: { host: api-node, subset: v1 }
+http:
+  - match:
+      - headers:
+          x-cohort: { exact: beta }
+    route:
+      - destination: { host: parser-cpp, subset: v2, port: { number: 9100 } }
+  - route:
+      - destination: { host: parser-cpp, subset: v1, port: { number: 9100 } }
 ```
+The gateway forwards the `x-cohort` header set by the client's `COHORT beta` command. Test:
 ```bash
-curl -H 'x-cohort: beta' http://$IP/api/products | jq .version  # → v2
-curl                     http://$IP/api/products | jq .version  # → v1
+{ echo "COHORT beta"; echo "MSG QU/SYDYYXY/JFKYYXY/HDQTSXY/T/1"; sleep 1; } | ncat $NLB 4561
 ```
+ACK should report `v2 fields=... priority=QU`. Default cohort hits v1.
 
-## Step 5 — Compare versions in Grafana
-Open the **AKS / Istio / Service** dashboard. Both versions should show distinct timeseries (use the `version` label that the app exposes through Prometheus). Look at:
-- P95 latency per version
-- Error rate per version
-- Throughput per version
+### 6.5 Grafana split
+Open Grafana → import the dashboard from `https://grafana.com/grafana/dashboards/7639` (Prometheus stats) and add a panel:
+```promql
+histogram_quantile(0.99, sum(rate(gateway_message_roundtrip_seconds_bucket[5m])) by (parser_version, le))
+```
+You should see two series; predict which one is higher before looking.
 
-Decide: promote v2 by shifting weights to 50/50, then 100/0. Roll back instantly by reverting weights.
+### 6.6 Kill-switch drill
+Time yourself: revert the `VirtualService` to 100 % v1, push, watch Argo sync. Target ≤ 30 s from "decision to roll back" to "100 % v1 serving".
 
-## Validation
-- `version: v2` appears in ~10 % of responses with default weights
-- `x-cohort: beta` deterministically routes to v2
-- Grafana shows two distinct latency series labeled `v1` and `v2`
+## 7. Validation
 
-## Stretch (L400)
-- Add an Istio **mirror** so v2 receives a copy of all real traffic without affecting users.
-- Implement **circuit breaking** in the `DestinationRule` for v2 only — pull it out of rotation on 5xx burst.
-- Combine with **Argo Rollouts** for automated analysis-driven promotion.
+- Both `parser-cpp` and `parser-cpp-v2` Deployments running with their Pods healthy.
+- Weighted run shows ~90/10 mix in client responses.
+- Header-based run sends `beta` cohort to v2 and everything else to v1.
+- Grafana panel split by `parser_version` renders two distinct series.
+- Kill-switch reverted in ≤ 30 s.
 
-## Cleanup
-- Revert the `VirtualService` to 100 % v1 before Module 05 so the canary ring starts from a known state.
+## 8. Stretch (L400)
+
+- Replace the hand-edited `VirtualService` with an **Argo Rollouts** AnalysisTemplate that auto-promotes v2 to 50 % only if decode-error rate stays below 0.01 %.
+- Express the routing rule as an Istio **WasmPlugin** that hashes connection-IDs and routes odd hex values to v2 — useful for stable per-airline A/B.
+
+## 9. Cleanup
+
+Revert routing to 100 % v1. Leave both Deployments running for M05 (the ring promotion will use v2 as its "new" artifact).

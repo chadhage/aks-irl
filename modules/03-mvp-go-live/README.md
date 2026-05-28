@@ -1,93 +1,113 @@
 # Module 03 — MVP Go-Live
 
-**Time:** ~90 min hands-on + builds  |  **Level target:** L300 (L400 stretch on supply-chain)
+**Time:** ~2 hr wall-clock (most of it is image builds + first sync)  |  **Level target:** L300
 
-**Success criterion this satisfies:** #1 — *Take an MVP from napkin to live customer.*
+**Success criterion this satisfies:** #1 — *Replatform the legacy socket workload into an MVP running on AKS.*
 
-## Outcomes
-- Build & push the three app images to ACR
-- Bootstrap Argo CD and onboard the storefront via app-of-apps
-- Watch traffic flow through Front Door → Istio gateway → `api-node` v1
-- Hit your first live request as "a customer"
+## 1. Outcomes
 
-## Things to think through first
-1. Why is the app **not** deployed by Terraform? What boundary does that draw?
-2. The image tag is the unit of truth for "what is running where". What happens if a tag is moved (`v1` repointed)?
-3. If Argo CD sync fails, where do you look first?
+By the end you will have:
 
-## Step 1 — Build & push the three images
-From the repo root, with `ACR_LOGIN_SERVER` exported (output of Terraform):
+- Built and pushed `gateway-java:v1`, `parser-cpp:v1`, `ops-console:v1` to your ACR
+- Bootstrapped Argo CD on the primary cluster and onboarded the messaging app-of-apps
+- A live TCP socket accepting Type B messages on the external NLB
+- The ops console rendering live session telemetry from the gateway
+- Performed the first end-to-end smoke test (`scripts/smoke.sh tcp ... 4561 50`)
+
+## 2. Where this fits in the replatform story
+
+This is the **first time the new platform takes real traffic**. The legacy stack is still in place; this is the parallel run. Everything afterward (A/B, rings, chaos, optimization) iterates on what comes alive in this module.
+
+## 3. Level target
+
+- **L300:** Build, push, GitOps sync, smoke test passes.
+- **L400:** Add ACR Tasks to build on `git push`, sign images with notation + AKV, enforce signed-only via Ratify.
+
+## 4. Talk track *(trainer)*
+
+Three things that distinguish this MVP from a "first AKS deploy" tutorial:
+
+1. **No HTTP load balancer in the data path.** The gateway sits behind a TCP Standard Load Balancer with a 30-minute idle timeout. Front Door is only for the ops console — it would *break* socket affinity if it were in front of the gateway.
+2. **`gateway-java` is a StatefulSet.** Each Pod gets a stable identity and ordinal. The NLB uses source-IP affinity so airline endpoints land on the same Pod after a reconnect when possible.
+3. **PostgreSQL is *outside* the cluster.** Azure DB for PostgreSQL — Flexible Server, zone-redundant HA, Entra-auth. We do not run state in the cluster for an MVP this critical.
+
+## 5. Demo cues *(trainer)*
+
+- Build and push **one** image (`gateway-java:v1`) live on the projector so the room sees the tag and digest format.
+- Show the Argo CD UI **before** sync (`OutOfSync`) and then click sync — the visual reinforces what "GitOps" actually does.
+- After sync, run `ncat <NLB_IP> 4561` from your own laptop, type `PING<enter>`, and show the `PONG` come back.
+
+## 6. Participant steps
+
+### 6.1 Build and push the three images
 ```bash
-export ACR=$(terraform -chdir=infra/terraform/envs/lab output -raw acr_login_server)
+ACR=$(terraform -chdir=infra/terraform/envs/lab output -raw acr_login_server)
 az acr login --name ${ACR%%.*}
 
-for app in api-node web-react worker-python; do
+for app in gateway-java parser-cpp ops-console; do
   docker build --build-arg APP_VERSION=v1 -t $ACR/$app:v1 apps/$app
   docker push $ACR/$app:v1
 done
 ```
 
-Then update the base manifests' image references — easiest is to set them per-environment in your fork:
-```bash
-# Edit k8s/overlays/dev/kustomization.yaml: replace ghcr.io/REPLACE with $ACR and dev-latest with v1
-# Commit and push to main of your fork.
-```
+### 6.2 Pin image refs in your fork
+Edit `k8s/overlays/dev/kustomization.yaml`, `canary/kustomization.yaml`, `prod/kustomization.yaml`:
+- Replace every `REPLACE_ACR` with `$ACR`
+- For dev/canary/prod, set the `newTag` to `v1` for first install
+- Replace `REPLACE` in `gitops/apps/*.yaml` and `gitops/projects/messaging.yaml` with your GitHub `<owner>/<repo>`
 
-> Tip: use **`kustomize edit set image`** to update image refs cleanly instead of hand-editing YAML.
+Commit and push.
 
-## Step 2 — Bootstrap Argo CD
+### 6.3 Bootstrap Argo CD
 ```bash
 az aks command invoke -g $RG -n $AKS --command "kubectl create namespace argocd"
 az aks command invoke -g $RG -n $AKS --command "
-  kubectl apply -n argocd \
-    -f https://raw.githubusercontent.com/argoproj/argo-cd/v2.12.4/manifests/install.yaml
+  kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v2.12.4/manifests/install.yaml
 "
 ```
-Wait for `argocd-server` to be Ready. Then apply the project and root Application:
+Wait for `argocd-server` Ready. Then:
 ```bash
-# From a workstation that can reach the Cluster (Bastion or 'az aks command invoke'):
-kubectl apply -f gitops/projects/storefront.yaml
-kubectl apply -f gitops/apps/root.yaml
+az aks command invoke -g $RG -n $AKS --command "kubectl apply -f /gitops/projects/messaging.yaml" --file gitops/projects/messaging.yaml
+az aks command invoke -g $RG -n $AKS --command "kubectl apply -f /gitops/apps/root.yaml" --file gitops/apps/root.yaml
 ```
 
-## Step 3 — Watch the rings come up
+### 6.4 Watch the rings come up
 ```bash
-kubectl -n argocd get applications -w
+az aks command invoke -g $RG -n $AKS --command "kubectl -n argocd get applications -w"
 ```
-You should see `ring-dev` and `ring-canary` sync; `ring-prod` will be in `OutOfSync` (manual sync — by design).
+`ring-dev` and `ring-canary` should reach **Synced + Healthy**; `ring-prod` stays `OutOfSync` (manual sync — by design).
 
+### 6.5 Get the NLB IP and smoke test
 ```bash
-kubectl -n app-dev get pods,svc
-kubectl -n app-canary get pods,svc
-```
+NLB=$(az aks command invoke -g $RG -n $AKS --command "
+  kubectl -n messaging-canary get svc gateway-java-tcp -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+" --query logs -o tsv)
+echo "NLB=$NLB"
 
-## Step 4 — Expose the app
-The base manifests include an Istio `Gateway` bound to the external ingress gateway. Find the public IP and hit it:
-```bash
-IP=$(kubectl -n aks-istio-system get svc aks-istio-ingressgateway-external -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-curl -s http://$IP/api/products | jq
-curl -s http://$IP/ | head -n 5
+./scripts/smoke.sh tcp $NLB 4561 50
 ```
 
-The Front Door endpoint (output of Terraform) routes the same path globally; use it from a browser to see the storefront UI rendered.
-
-## Step 5 — Smoke test from the customer perspective
+### 6.6 Browse the ops console
 ```bash
-FD=$(terraform output -raw front_door_endpoint)
-hey -z 30s -c 20 $FD/api/products    # 30s, 20 concurrent
+FD=$(terraform -chdir=infra/terraform/envs/lab output -raw front_door_endpoint)
+open $FD     # macOS / xdg-open / start
 ```
-Open Grafana → **Kubernetes / Compute Resources / Namespace (Workloads)** dashboard. You should see `api-node` requests, latency p95, and CPU climb.
+Refresh — you should see the session count tick up as you re-run the smoke test.
 
-## Validation
-- `curl $FD/api/products` returns 200 with `version: v1`
-- Argo CD UI shows `ring-dev`, `ring-canary`, `ring-prod` all syncing or healthy
-- Grafana dashboards have non-zero metrics from your Cluster
-- The web UI renders products and shows `v1` pill
+## 7. Validation
 
-## Stretch (L400)
-- Enable **ACR Tasks** to build the image on push to `main` instead of building locally.
-- Sign images with **notation** + **AKV-signed certificate**, and enforce signed-only via Ratify.
-- Add an Istio `AuthorizationPolicy` so only the ingress gateway can call `api-node` (deny Pod-to-Pod from outside the mesh).
+- `./scripts/smoke.sh tcp $NLB 4561 50` reports `50/50 sessions established, 0 dropped, P99 RTT < 250 ms`.
+- Ops console at the Front Door URL renders and shows non-zero `Active sockets`.
+- `kubectl -n messaging-canary get sts gateway-java` shows all replicas Ready.
+- Argo CD UI: `ring-dev` and `ring-canary` Synced+Healthy; `ring-prod` OutOfSync (intentional).
 
-## Cleanup
-None — Day 2 builds directly on this.
+## 8. Stretch (L400)
+
+- Enable **ACR Tasks** so an image gets built and pushed on every commit to `apps/<svc>/`.
+- Sign images with `notation` + an AKV-signed certificate; enforce signed-only with **Ratify** in the cluster.
+- Add an Istio `AuthorizationPolicy` that denies parser calls from anything other than the gateway SA.
+- Replace the demo HTTP `/decode` call between gateway and parser with mTLS gRPC for L400 realism.
+
+## 9. Cleanup
+
+None — Modules 04–07 build directly on this.

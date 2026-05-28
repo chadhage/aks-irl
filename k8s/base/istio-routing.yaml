@@ -1,50 +1,59 @@
-# Istio Gateway + VirtualService for the storefront.
-# Module 03 uses a single subset (v1). Module 04 layers a v2 subset and shifts traffic.
+# Istio routing for the messaging stack.
+# - ops-console (HTTP) is fronted by Front Door via the external ingress gateway.
+# - TCP data plane (sockets) reaches gateway-java directly through the Azure
+#   NLB created by the gateway-java-tcp Service; mTLS Pod-to-Pod for the
+#   gateway → parser leg lives inside the mesh.
+# Module 04 layers parser-cpp v2 and shifts gateway→parser traffic via this
+# VirtualService.
+
 apiVersion: networking.istio.io/v1
 kind: Gateway
 metadata:
-  name: storefront-gw
-  namespace: app
+  name: ops-console-gw
+  namespace: messaging
 spec:
   selector:
     istio: aks-istio-ingressgateway-external
   servers:
-    - port:
-        number: 80
-        name: http
-        protocol: HTTP
+    - port: { number: 80, name: http, protocol: HTTP }
       hosts: ["*"]
 ---
 apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
-  name: storefront
-  namespace: app
+  name: ops-console
+  namespace: messaging
 spec:
   hosts: ["*"]
-  gateways: [storefront-gw]
+  gateways: [ops-console-gw]
   http:
-    - match:
-        - uri: { prefix: "/api/" }
+    - match: [ { uri: { prefix: "/" } } ]
       route:
-        - destination: { host: api-node, subset: v1, port: { number: 8080 } }
+        - destination: { host: ops-console, port: { number: 8080 } }
+---
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: parser-cpp
+  namespace: messaging
+spec:
+  hosts: ["parser-cpp.messaging.svc.cluster.local"]
+  http:
+    - route:
+        - destination: { host: parser-cpp, subset: v1, port: { number: 9100 } }
           weight: 100
-    - match:
-        - uri: { prefix: "/" }
-      route:
-        - destination: { host: web-react, port: { number: 8080 } }
 ---
 apiVersion: networking.istio.io/v1
 kind: DestinationRule
 metadata:
-  name: api-node
-  namespace: app
+  name: parser-cpp
+  namespace: messaging
 spec:
-  host: api-node
+  host: parser-cpp
   trafficPolicy:
     connectionPool:
-      tcp: { maxConnections: 100 }
-      http: { http2MaxRequests: 1000, maxRequestsPerConnection: 10 }
+      tcp: { maxConnections: 200 }
+      http: { http2MaxRequests: 2000, maxRequestsPerConnection: 50 }
     outlierDetection:
       consecutive5xxErrors: 5
       interval: 30s

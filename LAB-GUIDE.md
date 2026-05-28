@@ -1,354 +1,308 @@
-# Lab Guide — Enterprise-Scale AKS IRL
+# Participant Lab Guide — WorkshopPlus
 
-A self-paced walkthrough. One learner, one desktop, one Azure subscription.
+> Your map through the cohort. The trainer drives; you track progress here.
 
-> Read the [Terminology](README.md#terminology--read-this-first) section in the README first. Kubernetes words (Pod, Container, Node, Cluster) always mean Kubernetes objects in this repo.
+## The apps in this repo are mocks
+
+You are **not** containerizing any real customer code in this workshop. Everything under [`apps/`](apps/) is a **synthetic stand-in** built only to exercise the AKS architecture for a socket-based real-time messaging workload:
+
+| Mock | Stands in for | What it actually does |
+|---|---|---|
+| `gateway-java` | A Java/Netty TCP gateway terminating long-lived airline sockets | Accepts TCP on 4561/4562, speaks a 3-verb protocol (`PING`, `COHORT`, `MSG`), forwards decode work to the parser over HTTP, emits Prometheus metrics |
+| `parser-cpp` | A C++ message decoder (Type B / SITATEX-shaped) | Splits ASCII envelopes, returns JSON; `v1` and `v2` differ only enough to A/B test |
+| `ops-console` | A NOC dashboard | Static nginx + a vanilla-JS page polling `/api/metrics` |
+
+The point is the **architecture, controls, and operational moves** — not the application logic. When you finish you will have run a real socket workload at production-grade shape on AKS; swapping in real customer code later is mostly a Dockerfile change.
+
+Read [Terminology](README.md#terminology--read-this-first) before going further. Kubernetes words (Pod, Container, Node, Cluster) always mean Kubernetes objects.
+
+---
 
 ## How to use this guide
 
-Each step below maps to a module under [`modules/`](modules/). Open the module README in one window; keep this guide in another so you can track progress across the full lab.
+When the trainer announces a module:
 
-For every module:
+1. Open that module's README; keep this guide in another window for the cross-module map.
+2. Listen to the **talk track** while reading **Outcomes**.
+3. Watch the **demo cues**.
+4. Work the **participant steps**; ping the TA on chat if stuck > 10 min.
+5. Run **validation** before the room moves on. If it fails, scroll to [Troubleshooting](#troubleshooting).
+6. Early finishers → **Stretch (L400)**.
 
-1. Read the module's **Outcomes** section.
-2. Work through the **Steps**.
-3. Run the **Validation** before moving on. If validation fails, scroll to the [Troubleshooting playbook](#troubleshooting-playbook) at the bottom.
-4. Optionally do the **Stretch (L400)** items if you're aiming for the higher level.
-
-You can pause between modules without losing state — the Terraform-managed infrastructure sits idle until you touch it again. Use the cost-saving snippet in [Module 08](modules/08-optimization/README.md) before long breaks.
-
----
-
-## Table of contents
-
-- [Phase 0 — Setup](#phase-0--setup)
-- [Phase 1 — Plan and provision](#phase-1--plan-and-provision)
-- [Phase 2 — Ship the MVP](#phase-2--ship-the-mvp)
-- [Phase 3 — Extend and harden](#phase-3--extend-and-harden)
-- [Phase 4 — Survive outages](#phase-4--survive-outages)
-- [Phase 5 — Optimize and assess](#phase-5--optimize-and-assess)
-- [Definition of done per success criterion](#definition-of-done-per-success-criterion)
-- [Troubleshooting playbook](#troubleshooting-playbook)
-- [Cheat sheet](#cheat-sheet)
-- [After the lab](#after-the-lab)
+You can stop between modules without losing state. Use the cost-saving snippet in [Module 08](modules/08-optimization/README.md) before overnight breaks.
 
 ---
 
-## Phase 0 — Setup
+## The arc — zero to hero
 
-1. Complete every check in [prerequisites.md](prerequisites.md).
-2. Run `./scripts/preflight.sh` from the repo root and confirm every line is `[OK]`.
-3. Fork this repo to your GitHub account and clone the fork locally.
-4. `az login` and confirm `az account show` returns your learning subscription.
+```
+M00  decide       →  what shape of AKS for a socket workload?
+M01  provision    →  Terraform: VNets, AKS×2, ACR, KV, Postgres Flex, Front Door
+M02  identify     →  Workload Identity → Postgres without passwords
+M03  ship MVP     →  build 3 images, GitOps sync, first TCP socket lands
+M04  A/B parser   →  ship parser v2 to 10% / a header cohort, no socket churn
+M05  rings        →  dev → canary → prod with a manual prod gate
+M06  intrinsic    →  Pod kill, bad rollout, zone drain — sockets survive
+M07  extrinsic    →  cross-region failover, measured RTO/RPO
+M08  optimize     →  right-size, spot for parser, KEDA scale-to-zero
+```
 
-**Done when** — preflight is green and you can run `az aks list` against your subscription without error.
+Each module has a clear validation. If you can run that validation, you are done.
+
+---
+
+## Phase 0 — Setup (before Day 1)
+
+1. Run every check in [prerequisites.md](prerequisites.md).
+2. `./scripts/preflight.sh` → every line `[PASS]`.
+3. Fork this repo. Clone the fork.
+4. `az login` and confirm `az account show` is your lab subscription.
+5. Read [SCENARIO.md](SCENARIO.md).
+
+**Done when** — preflight is green and `az aks list` runs without error.
 
 ---
 
 ## Phase 1 — Plan and provision
 
-### Module 00 — Envisioning (≈30 min)
-📄 [modules/00-envisioning/README.md](modules/00-envisioning/README.md)
+### M00 — Envisioning (~45 min)
+[modules/00-envisioning/README.md](modules/00-envisioning/README.md)
 
-- Read the Contoso Storefront brief.
-- Make the **9 Day-0 decisions** (Cluster SKU, API access, Pod IPs, mesh, OS, zones, regions, identity, secrets) and write them into `modules/00-envisioning/adr-001-aks-platform.md` using [adr-template.md](modules/00-envisioning/adr-template.md).
+Walk the 9 Day-0 decisions as a cohort. Commit `modules/00-envisioning/adr-001-aks-platform.md` from [`adr-template.md`](modules/00-envisioning/adr-template.md).
 
-**Done when** — your ADR has a decision, a rationale, and at least one rejected alternative per Day-0 question.
+**Done when** — your ADR has a decision, rationale, and rejected alternative per Day-0 question.
 
-**Self-check** — *Name one Day-0 decision you made and the alternative you rejected. What's your SLO and the matching error budget for 30 days?*
+**Self-check** — *Name one Day-0 decision and the rejected alternative. State your latency SLO and 30-day error budget.*
 
-### Module 01 — Platform foundation (≈60 min wall-clock)
-📄 [modules/01-platform-foundation/README.md](modules/01-platform-foundation/README.md)
+### M01 — Platform foundation (~60 min wall-clock)
+[modules/01-platform-foundation/README.md](modules/01-platform-foundation/README.md)
 
-1. Provision the Terraform remote-state backend (`infra/terraform/bootstrap/`).
-2. Create an Entra app + federated credential for GitHub Actions OIDC.
-3. Add the three secrets (`AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`) to your fork.
-4. Copy `infra/terraform/envs/lab/terraform.tfvars.example` → `terraform.tfvars` and fill it in.
-5. Run `terraform init`, `terraform plan`, `terraform apply`. Apply takes ~25 minutes — start it and let it run while you read [Module 02](modules/02-cluster-hardening/README.md).
+1. Bootstrap the Terraform state backend (`infra/terraform/bootstrap/`).
+2. Create the GitHub OIDC app + federated credential; add 3 secrets to your fork.
+3. `cp terraform.tfvars.example terraform.tfvars`, fill in.
+4. `terraform init && terraform plan && terraform apply` (~25 min — trainer uses the wait for M02 concepts).
 
-**Done when** — `terraform apply` exits 0 with the full output set (`aks_primary_id`, `acr_login_server`, `frontdoor_endpoint`, …).
+**Done when** — apply exits 0 with all outputs populated.
 
-**Self-check** — *Why is `local_account_disabled = true` on the Cluster, and what does it cost you?*
+**Self-check** — *Why is `local_account_disabled = true` on the cluster, and what does it cost you?*
 
-### Module 02 — Cluster hardening & access (≈45 min)
-📄 [modules/02-cluster-hardening/README.md](modules/02-cluster-hardening/README.md)
+### M02 — Cluster hardening & identity (~45 min)
+[modules/02-cluster-hardening/README.md](modules/02-cluster-hardening/README.md)
 
-- Validate: `az aks command invoke` → `kubectl get nodes -o wide` (3 Nodes, 3 zones).
-- Create the User-Assigned Managed Identity for `api-node` and the federated credential with subject `system:serviceaccount:app:api-node`.
-- Assign `Key Vault Secrets User` to the UAMI.
-- Verify Istio: `kubectl get pods -n aks-istio-system`.
+- `az aks command invoke` → `kubectl get nodes -o wide` (3 Nodes, 3 zones).
+- Create the UAMI for `gateway-java`, federate with subject `system:serviceaccount:messaging:gateway-java`.
+- Grant `Key Vault Secrets User` + Postgres Entra connect to the UAMI.
+- Confirm `aks-istio-system` Pods Running.
 
-**Done when** — `kubectl get nodes` works, `istiod` and `aks-istio-ingressgateway-external` are `Running`.
+**Done when** — nodes Ready, Istio healthy, throwaway Pod can `az login` via federation.
 
-**Self-check** — *How is Workload Identity different from the deprecated Pod Identity?*
+**Self-check** — *How is Workload Identity different from deprecated Pod Identity, and why does it matter for the gateway's Postgres connection?*
 
 ---
 
 ## Phase 2 — Ship the MVP
 
-### Module 03 — MVP go-live (≈2 hr wall-clock)
-📄 [modules/03-mvp-go-live/README.md](modules/03-mvp-go-live/README.md)
+### M03 — MVP go-live (~2 hr including image builds)
+[modules/03-mvp-go-live/README.md](modules/03-mvp-go-live/README.md)
 
-1. `az acr login` and build/push the three images as `:v1`:
-   - `apps/api-node` → `<acr>.azurecr.io/api-node:v1`
-   - `apps/worker-python` → `<acr>.azurecr.io/worker-python:v1`
-   - `apps/web-react` → `<acr>.azurecr.io/web-react:v1`
-2. Bootstrap Argo CD: `kubectl apply -k gitops/bootstrap`.
-3. Apply the root app: `kubectl apply -f gitops/apps/root.yaml`.
-4. Replace **all** `REPLACE` placeholders in `gitops/` and `k8s/overlays/` with your repo URL and ACR name. Commit + push.
-5. Watch `kubectl -n argocd get applications -w` until `ring-dev` and `ring-canary` are **Synced + Healthy**.
-6. `curl` your Front Door endpoint → 200 with `"version":"v1"`.
-7. Run a load test: `hey -z 30s -c 20 https://<your-fd>.azurefd.net/api/products`.
+1. Build and push all three mock images as `:v1` to your ACR.
+2. Apply Argo CD (`kubectl apply -k gitops/bootstrap`); apply the root app.
+3. Replace every `REPLACE` placeholder in `gitops/` and `k8s/overlays/`. Commit + push.
+4. Watch `kubectl -n argocd get applications -w` until `ring-dev` + `ring-canary` are **Synced + Healthy**. `ring-prod` stays OutOfSync (by design).
+5. Smoke test:
+   ```bash
+   ./scripts/smoke.sh tcp $(terraform output -raw messaging_nlb_ip) 4561 50
+   ```
+6. Open the ops console at the Front Door URL; confirm the session count climbs as you re-run smoke.
 
-**Done when** — your Front Door URL serves `web-react` in a browser **and** `/api/products` returns 200 with `"version":"v1"`. Grafana shows the load test as a real spike.
+**Done when** — smoke reports `50/50 sessions, 0 dropped, P99 RTT < 250 ms`; ops console shows live sessions.
 
-**Self-check** — *List every TLS termination point between a customer browser and a `web-react` Pod.*
+**Self-check** — *Trace one Type B message from airline → Postgres journal. List every TLS termination point.*
 
-🎉 **Success criterion #1 — Live customer — achieved.**
+🎉 **Success #1 — MVP live.**
 
 ---
 
 ## Phase 3 — Extend and harden
 
-### Module 04 — A/B testing with Istio (≈75 min)
-📄 [modules/04-ab-testing/README.md](modules/04-ab-testing/README.md)
+### M04 — A/B testing parser versions (~75 min)
+[modules/04-ab-testing/README.md](modules/04-ab-testing/README.md)
 
-1. Build & push `api-node:v2`.
-2. Deploy v2 alongside v1 (two Deployments, different `version` labels).
-3. Update the `VirtualService` for a **90/10 weighted split**. Verify with a curl loop.
-4. Switch to **header-based routing** (`x-cohort: beta` → v2). Verify both paths.
-5. Open Grafana, split a panel by `version` label, run a load test. **Predict P95 before looking.**
-6. Kill-switch drill: revert the `VirtualService` to 100% v1 in under 30 seconds.
+1. Build and push `parser-cpp:v2`.
+2. Deploy v2 alongside v1.
+3. Update the `VirtualService` for a 90/10 weighted split. Verify with synthetic loops.
+4. Switch to header-based routing (`x-cohort: beta` → v2).
+5. Grafana panel split by `parser_version` — predict P99 before looking.
+6. Kill-switch drill: revert to 100% v1 in < 30 s.
 
-**Done when** — Both versions are running, both routing strategies work, Grafana shows the split.
+**Done when** — both versions running, both routing modes work, Grafana shows the split.
 
-**Self-check** — *Sketch the `match` block to route all customers with header `Authorization` containing `tier=premium` to v2.*
+**Self-check** — *Sketch a `match` block routing connection-IDs ending in odd hex digits to v2.*
 
-🎉 **Success criterion #2 — A/B testing — achieved.**
+🎉 **Success #2 — A/B parser tested.**
 
-### Module 05 — Deployment rings + gates (≈80 min)
-📄 [modules/05-deployment-rings/README.md](modules/05-deployment-rings/README.md)
+### M05 — Rings + gates (~80 min)
+[modules/05-deployment-rings/README.md](modules/05-deployment-rings/README.md)
 
-1. Open a small PR (e.g., change a JSON field) → merge.
-2. Watch CI build, scan, push `:sha-<short>`.
-3. Watch CI **auto-bump** `k8s/overlays/canary/kustomization.yaml`; Argo syncs canary.
-4. CI runs the 5-min smoke test → opens a **prod-bump PR**.
-5. Approve the prod-bump PR (GitHub Environments protection rule kicks in).
-6. After merge, **manually sync** `ring-prod` in the Argo CD UI.
-7. Practice **both rollbacks**: (a) Argo CD UI rollback, (b) Git revert PR. Time each.
+1. PR a tiny real change → merge.
+2. CI builds, scans, pushes `:sha-<short>`.
+3. CI auto-bumps canary kustomization; Argo syncs canary.
+4. CI runs the socket-soak; opens a prod-bump PR.
+5. Approve the PR (Environments protection rule).
+6. **Manually sync** `ring-prod` in the Argo UI.
+7. Practice both rollbacks: Argo UI rollback, Git revert PR. Time each.
 
-**Done when** — your change is live in prod **and** you've rolled back at least once.
+**Done when** — your change is live in prod and you've rolled back at least once.
 
-**Self-check** — *Argo CD rolled prod back to v1, but Git still says v2. Next action, and why?*
+**Self-check** — *Argo rolled prod back to v1, but Git still says v2. Next action, and why?*
 
-🎉 **Success criterion #3 — Rings + gated promotion — achieved.**
+🎉 **Success #3 — Rings + gated promotion.**
 
 ---
 
 ## Phase 4 — Survive outages
 
-### Module 06 — Intrinsic outage (≈90 min)
-📄 [modules/06-intrinsic-outage/README.md](modules/06-intrinsic-outage/README.md)
+### M06 — Intrinsic outage (~90 min, war-room)
+[modules/06-intrinsic-outage/README.md](modules/06-intrinsic-outage/README.md)
 
-Set up the "war room" view on your desktop — three things visible at once:
+Set up three panes: Grafana (session success + RTT P99), `kubectl get pods -n messaging-prod -w`, and a sustained socket generator.
 
-- Live Grafana (success rate + P95 panels)
-- `kubectl get pods -n app-prod -w`
-- A curl loop hitting your Front Door
+- **A — Parser Pod kill loop.** RTT should not spike (PDB + mesh retries). Break PDB, watch SLO break, **restore PDB**.
+- **B — Bad parser rollout** (`parser-cpp:bad`). Target rollback < 2 min. Record actual.
+- **C — Zone drain** via [`chaos/zone-failure-experiment.bicep`](chaos/zone-failure-experiment.bicep). Watch the reconnect storm hit the surviving zones; confirm ≥ 99% reconnect within 30 s.
 
-Run all three scenarios:
+**Done when** — all three scenarios run, one Grafana screenshot per scenario, one incident write-up committed.
 
-#### Scenario A — Pod kill (6A)
-- Loop deleting a random `api-node` Pod every 5 seconds for 60 seconds.
-- Watch the success-rate panel: should **not** dip (PDB has `minAvailable: 2`).
-- Break the PDB to `minAvailable: 0`, repeat — watch SLO breach. **Restore the PDB.**
+🎉 **Success #4 — Intrinsic outage survived.**
 
-#### Scenario B — Bad deploy (6E)
-- Push `api-node:bad` that crash-loops or returns 500s.
-- Update overlay, watch Argo sync, watch Grafana break.
-- Roll back in under 2 minutes (target). Record the time.
+### M07 — Extrinsic outage + cross-region failover (~90 min)
+[modules/07-extrinsic-outage/README.md](modules/07-extrinsic-outage/README.md)
 
-#### Scenario C — Zone failure (6D, Chaos Studio)
-- Deploy `chaos/zone-failure-experiment.bicep`.
-- Start the experiment → an entire zone of Nodes drains.
-- Confirm zones 1 + 3 absorb the load, Front Door stays green.
+1. Bootstrap Argo on the secondary cluster (same as M03, different cluster).
+2. Verify Postgres geo-replica lag < 5 s.
+3. Sustained socket load against primary NLB.
+4. Surgical failover: swap the messaging DNS record from primary → secondary NLB. Promote the Postgres replica.
+5. Measure: socket-reconnect RTO, message RPO.
+6. Optional: brutal `az aks stop` on primary. Compare.
+7. Recover to primary without flooding it.
 
-**Done when** — All three scenarios run, you have **one Grafana screenshot per scenario**, and you can answer: *What protected us in each case?*
+**Done when** — RTO/RPO recorded, recovery clean, no Postgres split-brain.
 
-Write a 5-line incident summary for **one** scenario to `modules/06-intrinsic-outage/incident-<scenario>.md` and commit it.
+**Self-check** — *Reconnect RTO was 90 s but P99 RTT stayed elevated for 4 min after. Why?*
 
-🎉 **Success criterion #4 — Intrinsic outage survived — achieved.**
-
-### Module 07 — Extrinsic outage + failover (≈90 min wall-clock)
-📄 [modules/07-extrinsic-outage/README.md](modules/07-extrinsic-outage/README.md)
-
-1. **Pre-flight**: bootstrap Argo CD on the **secondary Cluster** (westus3) — same steps as Module 03, different Cluster.
-2. Verify v1 is running on both Clusters.
-3. Run `hey -z 5m -c 50` against Front Door (sustained load).
-4. **Surgical failover**: in the Azure portal or via CLI, disable the **primary origin** on Front Door.
-5. Measure: how long until traffic shifts? (your **RTO**). How many requests failed during the window? (your **RPO**-adjacent metric for a stateless app).
-6. Optionally try the **brutal** version: `az aks stop` on primary. Compare behavior.
-7. **Recover**: re-enable origin, but set its weight low first, then ramp.
-8. Write your observed RTO/RPO into `modules/07-extrinsic-outage/incident-region.md`.
-
-**Done when** — Failover RTO recorded, recovery done **without** flooding the cold-start primary.
-
-**Self-check** — *Your observed RTO was 90 s, but customer P95 latency stayed elevated for 4 minutes. Why?*
-
-🎉 **Success criterion #5 — Extrinsic outage survived — achieved.**
+🎉 **Success #5 — Extrinsic outage survived.**
 
 ---
 
 ## Phase 5 — Optimize and assess
 
-### Module 08 — Optimization (≈45 min)
-📄 [modules/08-optimization/README.md](modules/08-optimization/README.md)
+### M08 — Optimization (~45 min)
+[modules/08-optimization/README.md](modules/08-optimization/README.md)
 
-- Turn on the spot pool; add a worker toleration; schedule it on spot.
-- Configure KEDA `ScaledObject` to drive the worker `0 → N → 0` based on queue depth.
-- Open Grafana, find the **actual** CPU/memory usage of `api-node` over the day.
-- Right-size: edit `requests` (and maybe `limits`) in `k8s/base/api-node-deployment.yaml`. Redeploy via Argo. Confirm Pods schedule and pass health checks.
+- Enable the spot pool; move parser batch reconciler to it with the right toleration.
+- KEDA `ScaledObject` drives `parser-cpp` `0 → N → 0` by Prometheus signal.
+- Right-size `gateway-java` requests from Grafana's actual P95 usage. Roll out **without** churning sockets.
 
-**Done when** — your `api-node` `requests` reflect reality, not guesses.
+**Done when** — right-sized requests reflect reality and the rollout did not drop the baseline session count.
 
-### Final knowledge check (≈30 min)
-📄 [assessment/knowledge-check.md](assessment/knowledge-check.md)
+### Final knowledge check (~30 min)
+[assessment/knowledge-check.md](assessment/knowledge-check.md)
 
-- Answer the questions in `assessment/submissions/answers.md`. Commit and push.
-- Sections A–E are required; the L400 extension is **bonus**.
-- The rubric ([assessment/rubric.md](assessment/rubric.md)) is open — read it before you start so you know how points are awarded. Grade yourself against it.
+Answer in `assessment/submissions/answers.md`. Sections A–E required, F is bonus. Read [`rubric.md`](assessment/rubric.md) first; self-grade after.
 
-**Done when** — your answers file is committed and self-scored against the rubric.
-
-🎉 **Success criterion #6 — Calibrated self-rating — achieved.**
+🎉 **Success #6 — Calibrated self-rating.**
 
 ---
 
-## Definition of done per success criterion
+## Definition of done — track yourself
 
-| # | Criterion | Done when |
-|---|---|---|
-| 1 | **Live customer** | Front Door URL serves `web-react` and `/api/products` returns 200 with `"version":"v1"`. |
-| 2 | **A/B testing** | v1 + v2 both running; weighted **and** header routing both demonstrated; Grafana split by version. |
-| 3 | **Rings + gates** | A PR has flowed through dev → canary → prod with a real approval; rollback executed at least once. |
-| 4 | **Intrinsic outage** | At least 2 chaos scenarios run; SLO breach observed and recovered; incident summary committed. |
-| 5 | **Extrinsic outage** | Failover RTO recorded; secondary Cluster served traffic; recovery done without overwhelming primary. |
-| 6 | **Calibrated rating** | Final assessment committed; self-graded against rubric. |
-
-Track your own progress:
 ```
-[ ] 1. Live customer
-[ ] 2. A/B testing
-[ ] 3. Rings + gates
-[ ] 4. Intrinsic outage
-[ ] 5. Extrinsic outage
-[ ] 6. Calibrated rating
+[ ] 1. MVP live                — TCP socket accepted, parser decodes, ops console live
+[ ] 2. A/B parser              — v1 + v2 both running, weighted + header routes, Grafana split
+[ ] 3. Rings + gates           — PR flowed dev → canary → prod with approval, ≥ 1 rollback done
+[ ] 4. Intrinsic outage        — ≥ 2 chaos scenarios run, incident written
+[ ] 5. Extrinsic outage        — RTO/RPO recorded, clean recovery, no split-brain
+[ ] 6. Calibrated rating       — assessment committed, self-graded
 ```
 
 ---
 
-## Troubleshooting playbook
+## Troubleshooting
 
 ### Terraform
-
-| Symptom | Likely cause | Fix |
-|---|---|---|
-| `AuthorizationFailed` on first apply | OIDC SP missing Owner / wrong subscription | Confirm `subscription_id` in `terraform.tfvars`. Re-check the SP's role assignment. |
-| `Microsoft.Cdn` / `Microsoft.OperationalInsights` not registered | Provider not registered in this subscription | `az provider register -n Microsoft.Cdn` (etc.) — then retry. |
-| Apply hangs > 30 min on Front Door | Probe configuration not yet propagated | Be patient up to 30 min; if longer, `terraform refresh` and re-plan. |
-| `local_account_disabled` blocks `kubectl` | Expected — use `az aks command invoke` or set up Entra-based `kubectl` | See M02 README. |
+| Symptom | Fix |
+|---|---|
+| `AuthorizationFailed` on first apply | Confirm `subscription_id` in tfvars; re-check OIDC SP roles |
+| `Microsoft.DBforPostgreSQL` not registered | `az provider register -n Microsoft.DBforPostgreSQL` and retry |
+| Apply hangs on Postgres Flex Server | Capacity in that zone — change `postgres_zone` in tfvars |
+| `kubectl` blocked by `local_account_disabled` | Use `az aks command invoke` or set up Entra `kubectl`; see M02 |
 
 ### Kubernetes / Istio
-
 | Symptom | Fix |
 |---|---|
-| `kubectl` hangs or "no route to host" | Private API server — use `az aks command invoke` or `scripts/connect-private-aks.sh` |
-| Pods stuck `ContainerCreating` | Likely image pull. `kubectl describe pod` → look for `ErrImagePull`. Confirm ACR pull role assignment. |
-| Pods `Running` but no Istio sidecar | Namespace missing `istio.io/rev=asm-1-23` label. `kubectl label ns app istio.io/rev=asm-1-23 --overwrite` and re-roll Pods. |
-| 503s through Front Door | Health probe failing → check Pod readiness, then Istio gateway, then FD probe path. |
+| `kubectl` hangs / no route | Private API server — use `az aks command invoke` or `scripts/connect-private-aks.sh` |
+| Pods `ContainerCreating` forever | Image pull. `kubectl describe pod`; confirm ACR pull role on Kubelet identity |
+| Pods Running but no Istio sidecar | Namespace missing `istio.io/rev=asm-1-23`; label and re-roll Pods |
+| Gateway readiness fails, sockets drop | Check logs — usually Workload Identity federated-credential subject mismatch |
+| Sockets drop at exactly 30 min | NLB idle timeout — annotation `service.beta.kubernetes.io/azure-load-balancer-tcp-idle-timeout: "30"` (minutes) |
 
 ### Argo CD
-
 | Symptom | Fix |
 |---|---|
-| `ring-dev` stuck `OutOfSync` | Almost always a `REPLACE` placeholder still in `gitops/` or `k8s/overlays/`. `grep -r REPLACE k8s gitops` |
-| Argo can't reach Git | Fork is private and no repo secret configured. Either make fork public or add repo creds to Argo. |
-| `ring-prod` `OutOfSync` | **By design.** It needs manual sync. |
+| `ring-dev` stuck `OutOfSync` | `grep -rn REPLACE k8s gitops` — leftover placeholder |
+| Argo can't reach Git | Private fork without repo creds in Argo — make public or add creds |
+| `ring-prod` `OutOfSync` | **By design.** Manual sync. |
 
 ### GitHub Actions
-
 | Symptom | Fix |
 |---|---|
-| `AADSTS70021: No matching federated identity record` | OIDC subject mismatch. Check the federated credential's `subject` matches `repo:<owner>/<repo>:ref:refs/heads/main` (or your branch). |
-| ACR push 401 | The OIDC SP is missing `AcrPush` on the registry. |
+| `AADSTS70021: No matching federated identity` | Subject mismatch on the federated credential; should match `repo:<owner>/<repo>:ref:refs/heads/main` |
+| ACR push 401 | OIDC SP missing `AcrPush` on the registry |
 
-If stuck for more than ~15 minutes on the same error: screenshot the message, re-read the module README from the previous validation step, and read the full error (not just the last line) — the answer is almost always in there.
+Stuck > 15 min on the same error: screenshot, re-read the previous validation step, ping the TA.
 
 ---
 
 ## Cheat sheet
 
-### Connect to the private Cluster (no kubeconfig)
 ```bash
-az aks command invoke \
-  --resource-group <rg> --name <aks> \
-  --command "kubectl get nodes -o wide"
-```
+# Reach the private cluster (no kubeconfig)
+az aks command invoke -g <rg> -n <aks> --command "kubectl get nodes -o wide"
 
-### Reset Argo CD admin password
-```bash
+# Reset Argo admin password
 kubectl -n argocd patch secret argocd-initial-admin-secret \
   -p '{"data":{"password":"'$(echo -n 'NewPassword!' | base64)'"}}'
-```
 
-### Watch a deploy in real time
-```bash
-kubectl -n app-prod get pods -w &
-kubectl -n app-prod logs -f deploy/api-node --tail=50
-```
+# Watch a deploy
+kubectl -n messaging-prod get pods -w &
+kubectl -n messaging-prod logs -f sts/gateway-java --tail=50
 
-### Curl loop to detect version split
-```bash
-for i in {1..50}; do
-  curl -s https://<fd>.azurefd.net/api/products | jq -r .version
-done | sort | uniq -c
-```
+# Detect parser version split from the client side
+for i in {1..50}; do ./scripts/smoke.sh tcp $NLB_IP 4561 1 --print-parser-version; done | sort | uniq -c
 
-### Force-resync an Argo app
-```bash
+# Force-resync an Argo app
 argocd app sync ring-dev --prune
-# or in the UI: app → Sync → Synchronize
-```
 
-### Quick load test
-```bash
-hey -z 30s -c 20 https://<fd>.azurefd.net/api/products
-```
+# Quick socket soak
+./scripts/smoke.sh tcp $NLB_IP 4561 200 --duration 60s
 
-### Find a leftover placeholder
-```bash
-grep -rn "REPLACE" k8s gitops
-```
+# Find leftover placeholders
+grep -rn REPLACE k8s gitops
 
-### Scale to zero for an overnight break
-```bash
-# In infra/terraform/envs/lab/terraform.tfvars
-node_pool_user_min = 0
-node_pool_user_max = 0
-# then
+# Park clusters for overnight (keeps Postgres + ACR)
+# in terraform.tfvars: node_pool_user_min = 0; node_pool_user_max = 0
 terraform apply
 ```
 
 ---
 
-## After the lab
+## After the workshop
 
-- **Keep your fork.** It's your reference architecture for the next 12 months.
-- **Tear down billing**: `terraform -chdir=infra/terraform/envs/lab destroy`, then verify in the Azure portal that all resource groups are gone.
-- **Read these next** to deepen each success area:
+- **Keep your fork** — it is your reference architecture and your single best engagement artifact.
+- **Stop billing**: `terraform -chdir=infra/terraform/envs/lab destroy`; confirm in the portal that RGs **and Postgres backups** are gone.
+- **Read next**:
   - [WAF — AKS service guide](https://learn.microsoft.com/azure/well-architected/service-guides/azure-kubernetes-service)
+  - [WAF — Azure DB for PostgreSQL Flexible Server](https://learn.microsoft.com/azure/well-architected/service-guides/postgresql)
   - [AKS public roadmap](https://aka.ms/aks/roadmap)
-  - [Argo CD best practices](https://argo-cd.readthedocs.io/en/stable/operator-manual/declarative-setup/)
-  - [Istio ambient mode](https://istio.io/latest/docs/ambient/overview/) — where the mesh story is headed
-
-Drive the platform; don't let it drive you. 🚀
+  - [Argo CD operator manual](https://argo-cd.readthedocs.io/en/stable/operator-manual/declarative-setup/)
+  - [Istio ambient mode](https://istio.io/latest/docs/ambient/overview/)

@@ -1,100 +1,82 @@
-# Module 05 — Deployment Rings with Gates
+# Module 05 — Deployment Rings & Gated Promotion
 
-**Time:** ~60 min  |  **Level target:** L300 → L400
+**Time:** ~80 min  |  **Level target:** L300
 
-**Success criterion this satisfies:** #3 — *Add multiple deployment rings with gates.*
+**Success criterion this satisfies:** #3 — *Promote changes through dev → canary → prod with gates and rollback.*
 
-## Outcomes
-- Build a tag-based promotion flow: `dev → canary → prod`
-- Automate dev (PR merge) and canary (auto-bump) rings
-- Require **PR review + Argo CD manual sync + smoke test** to release to prod
-- Roll back a bad release in under 60 seconds
+## 1. Outcomes
 
-## The ring model
+You can:
 
-```
-                       GitHub Action                   GitHub Action
-PR merge → main ───▶ build & push :sha ───▶ bump dev ─────▶ Argo CD auto-sync ─▶ dev
-                                              │
-                                              └─▶ after 5m soak: bump canary ─▶ Argo CD auto-sync ─▶ canary
-                                                                                       │
-                                                                                       └─ smoke test passes ?
-                                                                                              │
-                                                                                              ▼
-                                                                                      open PR bumping prod
-                                                                                              │
-                                                                                              ▼
-                                                                                  human approves PR
-                                                                                              │
-                                                                                              ▼
-                                                                                  Argo CD MANUAL sync ─▶ prod
-```
+- Push a change and watch it flow through dev → canary automatically
+- See a GitHub Action open a **prod-promotion PR** after canary smoke passes
+- Approve the prod PR through a GitHub Environments protection rule
+- **Manually sync** `ring-prod` in Argo CD (auto-sync intentionally disabled)
+- Roll back two ways — Argo CD UI and Git revert — and know when to use each
 
-## Step 1 — Set up image tags by SHA
-The CI workflow ([`.github/workflows/ci.yaml`](../../.github/workflows/ci.yaml)) tags images by the commit SHA. After a PR merges to main:
-- `dev-latest` is moved to point at the new SHA
-- `canary` overlay's `newTag:` is bumped automatically (commit by `github-actions[bot]`)
-- A draft PR is opened bumping `prod` overlay's `newTag:` — review required
+## 2. Where this fits in the replatform story
 
-## Step 2 — Wire the gates
-For each ring, set GitHub **Environment protection rules**:
+The customer cannot release like the old days (RPM swap on a Friday with a one-page change ticket). Regulators want every change traceable to a PR, an approver, and a one-click revert. The ring layout in this repo is the artifact they take into their CAB.
 
-| Environment | Required reviewers | Wait | Branch | Notes |
-|---|---|---|---|---|
-| `dev` | none | 0 | `main` | Auto-merge bump commits |
-| `canary` | none | 5 min soak | `main` | Pause for SLO check |
-| `prod` | 1 reviewer | 0 | `main` | Argo CD `ring-prod` syncPolicy is **manual** |
+## 3. Level target
 
-Add a **smoke-test job** that runs against canary before the prod-bump PR is opened. The job exits non-zero if:
-- `/api/products` returns non-200 for 1% of 500 requests
-- P95 latency > 300 ms over a 60 s window (via `curl` + `jq` against Prometheus query API)
+- **L300:** Promote one real change end-to-end; rollback at least once.
+- **L400:** Wire an SLO-aware gate that blocks the prod PR if canary error budget burn is > 2× expected.
 
-A working smoke-test script lives at [`../../scripts/smoke.sh`](../../scripts/smoke.sh).
+## 4. Talk track *(trainer)*
 
-## Step 3 — Tighten Argo CD RBAC per ring
-Apply this `ConfigMap` patch — it scopes app-team logins to **sync canary** but **not prod**:
-```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata: { name: argocd-rbac-cm, namespace: argocd }
-data:
-  policy.default: role:readonly
-  policy.csv: |
-    p, role:app-team, applications, sync, storefront/ring-dev, allow
-    p, role:app-team, applications, sync, storefront/ring-canary, allow
-    p, role:platform-admin, applications, *, storefront/*, allow
-    g, your-org:app-team, role:app-team
-    g, your-org:platform, role:platform-admin
+Three points:
+1. **Auto-sync stops at the canary boundary.** This is not a tooling limitation — it's a deliberate seam where a human reads the canary signal.
+2. **The image tag in `kustomization.yaml` is the unit of truth.** Argo reconciles to whatever tag is in Git. If you "fixed it with `kubectl edit`", Argo will undo you within 90 s.
+3. **Rollback is a deploy.** Treat it like one. The faster path is usually the Argo UI rollback; the audit-friendly path is a Git revert PR. You should be fluent in both.
+
+## 5. Demo cues *(trainer)*
+
+- Drive the PR-bump live: change a comment in `apps/parser-cpp/parser.cpp`, push, then click through the GH Actions tab as the build → push → canary-sync → smoke → prod-PR-open flow runs.
+- Then perform a rollback via the Argo UI. Show that Git is now "ahead" of the cluster and explain when to revert vs when to roll forward.
+
+## 6. Participant steps
+
+### 6.1 Make a real change
+Edit `apps/parser-cpp/parser.cpp` (e.g., add a comment), commit, push to `main`. Or bump `apps/gateway-java/pom.xml` minor version.
+
+### 6.2 Watch CI build + push
+GitHub Actions builds, scans (Trivy), pushes `:sha-<short>`.
+
+### 6.3 Watch canary bump + sync
+CI **auto-bumps** `k8s/overlays/canary/kustomization.yaml` to the new tag. Argo CD picks it up within a minute. Watch:
+```bash
+az aks command invoke -g $RG -n $AKS --command \
+  "kubectl -n argocd get application ring-canary -o jsonpath='{.status.sync.status}{\"\\t\"}{.status.health.status}{\"\\n\"}'"
 ```
 
-## Step 4 — Practice a release
-1. Open a tiny PR to `apps/api-node/src/server.js` (change the response message)
-2. Merge → watch CI build, push `:sha`, bump dev overlay
-3. Watch Argo CD sync `ring-dev`; verify response from dev namespace
-4. After the 5 min soak, watch canary auto-bump and sync
-5. Run smoke test against canary
-6. Approve the auto-opened prod-bump PR
-7. In Argo CD UI: select `ring-prod` → **Sync**
-8. Verify `/api/products` against Front Door now returns the new message
+### 6.4 CI runs the socket-soak smoke test
+The action runs `./scripts/smoke.sh tcp <canary-nlb-ip> 4561 200 --duration 60s`. If it passes, the action opens a PR titled `prod: bump to sha-<short>`.
 
-## Step 5 — Practice a rollback
-Two paths, both timed:
+### 6.5 Approve the prod PR
+GitHub Environments protection rule requires your review. Approve and merge.
 
-**Fast path — revert in Argo CD UI:** click `ring-prod` → **History and Rollback** → pick the previous Sync → Rollback. **~15 seconds.**
+### 6.6 Manually sync ring-prod
+Open the Argo CD UI → `ring-prod` → click **Sync**. Confirm.
 
-**Truthful path — revert via PR:** open a revert PR on the prod overlay's `kustomization.yaml`. Merge → Argo CD shows OutOfSync → manual sync. **~90 seconds.**
+### 6.7 Practice both rollbacks
+- **Argo UI rollback** — `ring-prod` → History and Rollback → pick prior revision. Fast (~30 s).
+- **Git revert PR** — `gh pr create` reverting the bump. Auditable (~3–5 min round trip).
 
-> Both are valid. The truthful path keeps Git as the source of truth — the Argo rollback marks the Application as out-of-sync until Git is reverted, which is friction by design.
+Record your times in your ADR.
 
-## Validation
-- A merged PR ends up in `ring-prod` only after PR review **and** manual Argo sync
-- A rollback of `ring-prod` to the previous version takes < 60 s
-- Argo CD logs show distinct `Sync` events with author identity preserved
+## 7. Validation
 
-## Stretch (L400)
-- Add **Argo Rollouts** to the canary ring with `AnalysisTemplate` reading Prometheus — auto-abort on SLO breach.
-- Add Azure DevOps Environments + approvals as an alternative gate; compare with GH Environments.
-- Implement **progressive delivery** at the prod ring: 1% → 10% → 50% → 100% with weighted routes.
+- A real PR flowed dev → canary → prod with a real approval.
+- You rolled back at least once and observed Pods rejoining at the prior version.
+- `gateway-java` socket count did **not** drop to zero during the prod promotion (StatefulSet rolling update + PDB).
 
-## Cleanup
-None — we'll exploit the running rings in Modules 06–08.
+## 8. Stretch (L400)
+
+- Add a GH Action gate that queries Managed Prometheus for canary error-budget burn rate and blocks the prod PR if > 2×.
+- Wire **Argo Rollouts** with a `BlueGreen` strategy for `ops-console` (HTTP-easy) and discuss why you wouldn't use it for `gateway-java`.
+- Add `gh deployment status` calls so the GitHub Deployments page becomes the source of truth for "who is in prod right now".
+
+## 9. Cleanup
+
+Leave both v1 and the new tag in prod for Module 06 — chaos scenarios use both.

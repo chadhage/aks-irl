@@ -8,7 +8,7 @@ locals {
   tags = {
     program     = var.program
     lab         = local.naming.lab
-    workshop    = "enterprise-scale-aks-irl"
+    workshop    = "airline-messaging-replatform-workshopplus"
     cost-center = "training"
     managed-by  = "terraform"
   }

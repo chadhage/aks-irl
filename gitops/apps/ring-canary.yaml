@@ -4,14 +4,14 @@ metadata:
   name: ring-canary
   namespace: argocd
 spec:
-  project: storefront
+  project: messaging
   source:
     repoURL: https://github.com/REPLACE/aks-briefing-with-labs.git
     targetRevision: HEAD
     path: k8s/overlays/canary
   destination:
     server: https://kubernetes.default.svc
-    namespace: app-canary
+    namespace: messaging-canary
   syncPolicy:
     automated: { prune: true, selfHeal: true }
     syncOptions: [CreateNamespace=true]

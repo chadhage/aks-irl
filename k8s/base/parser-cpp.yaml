@@ -1,0 +1,76 @@
+# parser-cpp: stateless message decoder. KEDA-scaled in Module 08.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: parser-cpp
+  namespace: messaging
+  labels: { app: parser-cpp, version: v1, tier: data-plane }
+spec:
+  replicas: 3
+  selector:
+    matchLabels: { app: parser-cpp }
+  template:
+    metadata:
+      labels: { app: parser-cpp, version: v1, tier: data-plane }
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "9090"
+    spec:
+      terminationGracePeriodSeconds: 30
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: { type: RuntimeDefault }
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels: { app: parser-cpp }
+      containers:
+        - name: parser
+          image: REPLACE_ACR/parser-cpp:v1
+          ports:
+            - name: http-decode
+              containerPort: 9100
+            - name: metrics
+              containerPort: 9090
+          env:
+            - name: APP_VERSION
+              value: v1
+          readinessProbe:
+            httpGet: { path: /readyz, port: http-decode }
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /healthz, port: http-decode }
+            periodSeconds: 10
+          resources:
+            requests: { cpu: 100m, memory: 64Mi }
+            limits:   { cpu: 1,    memory: 256Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: parser-cpp
+  namespace: messaging
+spec:
+  selector: { app: parser-cpp }
+  ports:
+    - name: http-decode
+      port: 9100
+      targetPort: http-decode
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: parser-cpp
+  namespace: messaging
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels: { app: parser-cpp }

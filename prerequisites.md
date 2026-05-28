@@ -1,10 +1,10 @@
-# Prerequisites
+# Prerequisites — WorkshopPlus participants
 
-> Complete every item below before you start [Module 00](modules/00-envisioning/README.md). Allow ~30 minutes the first time.
+> Complete every item below **before Day 1**. Allow ~60 minutes for the first pass. If a check fails, raise it with the trainer on the workshop chat at least 24 h before kick-off — some of these (quota, feature flags) can take hours to resolve.
 
-## 1. Local tools (one desktop)
+## 1. Local tools (your laptop)
 
-Install these and confirm versions:
+Install these and confirm the versions:
 
 | Tool | Min version | Check |
 |---|---|---|
@@ -17,33 +17,35 @@ Install these and confirm versions:
 | git | 2.40 | `git --version` |
 | jq, yq | latest | `jq --version`, `yq --version` |
 | GitHub CLI | 2.50 | `gh --version` |
+| `ncat` / `openssl s_client` | latest | `ncat --version` — used for socket smoke-tests |
 
-Optional but useful: `k9s`, `stern`, `argocd` CLI, `istioctl`, `hey` (load test).
+Optional but useful: `k9s`, `stern`, `argocd` CLI, `istioctl`, `psql` (Postgres client).
 
-## 2. Azure — one learning subscription
+## 2. Azure — your own lab subscription
 
-- One Azure subscription you can use for this lab (MCAPS, MPN sandbox, Visual Studio benefit, or any pay-as-you-go you control)
+- One Azure subscription you can use for this workshop (MCAPS, MPN sandbox, Visual Studio benefit, or any pay-as-you-go you control)
 - You are **Owner** on the subscription (or at least on the resource group where everything will live)
 - `az login` succeeds and `az account show` returns the right subscription
 
-> The lab provisions Azure Front Door (global) + dual-region AKS + dual Key Vaults + ACR + observability. Plan for **~$25–$40/day** while everything is running. Modules include scale-to-zero / stop instructions so you can pause overnight.
+> The workshop provisions Azure Front Door (global) + dual-region AKS + dual Key Vaults + Azure DB for PostgreSQL Flexible Server (HA) + ACR + observability. Plan for **~$35–$55/day** while everything is running. Modules include scale-to-zero / stop instructions so you can pause overnight.
 
 ### Quotas to verify
 
-In your subscription, confirm you have headroom in both regions:
+In your subscription, confirm headroom in both regions:
 
 | Resource | Quantity | Region |
 |---|---|---|
-| vCPU (Standard_D-series v5) | 24 | eastus2 |
+| vCPU (Standard_D-series v5) | 32 | eastus2 |
 | vCPU (Standard_D-series v5) | 16 | westus3 |
-| Public IP (Standard) | 4 | eastus2 + westus3 |
+| Public IP (Standard) | 6 | eastus2 + westus3 (NLB for TCP + Front Door origin + Bastion) |
 | Front Door Standard profile | 1 | global |
 | Log Analytics workspace | 1 | eastus2 |
 | Azure Managed Grafana | 1 | eastus2 |
 | Key Vault | 2 | eastus2 + westus3 |
 | ACR (Premium, zone-redundant) | 1 | eastus2 (geo-replicated to westus3) |
+| Azure Database for PostgreSQL Flexible Server | 2 (primary + replica) | eastus2 + westus3 |
 
-Total **≈ 40 vCPU**. Order **≥ 50 vCPU** in each region so autoscale during chaos labs has headroom.
+Total **≈ 48 vCPU**. Order **≥ 60 vCPU** in each region so autoscale during chaos labs has headroom.
 
 Check quotas:
 ```bash
@@ -59,6 +61,7 @@ az feature register --namespace Microsoft.ContainerService --name EnableIstioMes
 az feature register --namespace Microsoft.ContainerService --name AzureServiceMeshPreview
 az feature register --namespace Microsoft.ContainerService --name NodeAutoProvisioningPreview
 az provider register --namespace Microsoft.ContainerService
+az provider register --namespace Microsoft.DBforPostgreSQL
 az provider register --namespace Microsoft.Insights
 az provider register --namespace Microsoft.AlertsManagement
 az provider register --namespace Microsoft.Dashboard
@@ -74,13 +77,14 @@ az provider register --namespace Microsoft.Cdn
 
 Fork the repo in the GitHub UI, then clone your fork locally:
 ```bash
-git clone https://github.com/<your-user>/aks-irl.git
-cd aks-irl
+git clone https://github.com/<your-user>/aks-briefing-with-labs.git
+cd aks-briefing-with-labs
 ```
 
 ## 4. Connectivity
 
 - Outbound TCP 443 to `*.azure.com`, `ghcr.io`, `mcr.microsoft.com`, `github.com`
+- Outbound TCP 4561 / 4562 to your own NLB public IP (used by the socket smoke-test from your laptop)
 - Azure Bastion is used to reach the private-API AKS Cluster (no public `kubectl` endpoint)
 
 ## 5. Pre-flight script
@@ -89,7 +93,17 @@ From the repo root:
 ```bash
 ./scripts/preflight.sh
 ```
-It prints a pass/fail line per check. Resolve any red lines before starting Module 00.
+It prints a pass/fail line per check. Resolve any red lines before Day 1.
+
+## 6. Read before Day 1
+
+- [SCENARIO.md](SCENARIO.md) — the Skybridge Messaging brief
+- [README.md](README.md#terminology--read-this-first) — terminology section (Kubernetes words vs the app's Java/C++ names)
+- The Day-0 decision table in [modules/00-envisioning/README.md](modules/00-envisioning/README.md)
+
+The trainer will assume you have done these. We will *not* spend the first hour reading the brief together.
+
+---
 
 ## Naming convention
 
@@ -97,17 +111,20 @@ It prints a pass/fail line per check. Resolve any red lines before starting Modu
 
 - `program` = `sita`
 - `lab` = `l01` (the lab identifier — defaults to `01`; you only need one)
-- `purpose` = `aks`, `kv`, `acr`, `rg`, `vnet`, …
+- `purpose` = `aks`, `kv`, `acr`, `rg`, `vnet`, `pg`, `nlb`, …
 - `region` = `eus2`, `wus3`
-- `instance` = 3-char random suffix from Terraform `random_string`
+- `instance` = 4-char random suffix from Terraform `random_string`
 
 Examples:
-- Primary resource group: `sita-l01-rg-eus2-a1b`
-- AKS Cluster: `sita-l01-aks-eus2-a1b`
-- ACR: `sital01acreus2a1b` (no dashes — ACR limitation)
+- Primary resource group: `sita-l01-rg-eus2-a1b2`
+- AKS Cluster: `sita-l01-aks-eus2-a1b2`
+- Postgres Flexible Server: `sita-l01-pg-eus2-a1b2`
+- Messaging NLB IP: `sita-l01-nlb-eus2-a1b2`
+- ACR: `sital01acreus2a1b2` (no dashes — ACR limitation)
 
 ## Cost guardrails
 
 - **Stop when you walk away.** Each module ends with an optional "scale-to-zero" snippet. Use it.
+- **Postgres Flexible Server cannot scale to zero** — it costs ~$8/day idle. Either delete it overnight or accept the cost.
 - **Final cleanup** is `terraform destroy` in `infra/terraform/envs/lab` (covered at the end of [LAB-GUIDE.md](LAB-GUIDE.md)).
-- Set a **subscription budget alert** at ~$50/day to catch surprises.
+- Set a **subscription budget alert** at ~$80/day to catch surprises.

@@ -1,18 +1,22 @@
-// Chaos Studio experiment that simulates a zone failure by cordoning all
-// nodes in a target zone. Used by Module 06 scenario 6D.
+// Chaos Studio experiment — Module 06 scenario C.
+// Drains an entire zone of gateway-java Pods to validate that:
+//   1. The remaining Pods absorb the reconnect storm from displaced sockets
+//   2. PDB minAvailable=2 holds
+//   3. Message RTT P99 recovers within 60 s after the storm
 //
-// Deploy: az deployment group create -g <rg> -f zone-failure-experiment.bicep \
-//          -p clusterName=<aks-name> zone=2
+// Deploy:
+//   az deployment group create -g <rg> -f zone-failure-experiment.bicep \
+//     -p clusterName=<aks-name> zone=2 region=eus2
 param location string = resourceGroup().location
 param clusterName string
 param zone string = '2'
-param experimentName string = 'sita-zone-failure'
+param region string = 'eus2'
+param experimentName string = 'skybridge-zone-failure'
 
 resource aks 'Microsoft.ContainerService/managedClusters@2024-09-01' existing = {
   name: clusterName
 }
 
-// Onboard the AKS cluster as a Chaos target (idempotent)
 resource target 'Microsoft.Chaos/targets@2024-01-01' = {
   name: 'Microsoft-AzureKubernetesServiceChaosMesh'
   scope: aks
@@ -33,7 +37,7 @@ resource experiment 'Microsoft.Chaos/experiments@2024-01-01' = {
     selectors: [
       {
         type: 'List'
-        id: 'aks-cluster'
+        id: 'gateway-zone'
         targets: [
           {
             type: 'ChaosTarget'
@@ -44,7 +48,7 @@ resource experiment 'Microsoft.Chaos/experiments@2024-01-01' = {
     ]
     steps: [
       {
-        name: 'cordon-zone-${zone}'
+        name: 'kill-gateway-zone-${zone}'
         branches: [
           {
             name: 'b1'
@@ -53,11 +57,12 @@ resource experiment 'Microsoft.Chaos/experiments@2024-01-01' = {
                 type: 'continuous'
                 name: 'urn:csci:microsoft:azureKubernetesServiceChaosMesh:podChaos/2.2'
                 duration: 'PT10M'
-                selectorId: 'aks-cluster'
+                selectorId: 'gateway-zone'
                 parameters: [
                   {
                     key: 'jsonSpec'
-                    value: '{"action":"pod-failure","mode":"all","selector":{"labelSelectors":{"topology.kubernetes.io/zone":"westus3-${zone}"}}}'
+                    // Target gateway-java Pods only, in the chosen AZ.
+                    value: '{"action":"pod-failure","mode":"all","selector":{"namespaces":["messaging-prod"],"labelSelectors":{"app":"gateway-java","topology.kubernetes.io/zone":"${region}-${zone}"}}}'
                   }
                 ]
               }

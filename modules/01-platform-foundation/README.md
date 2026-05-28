@@ -1,99 +1,96 @@
-# Module 01 — Platform Foundation (Terraform)
+# Module 01 — Platform Foundation
 
-**Time:** ~30 min hands-on + ~25 min `terraform apply` wall-clock  |  **Level target:** L300
+**Time:** ~60 min wall-clock (most of it is Terraform apply)  |  **Level target:** L300
 
-## Outcomes
-- Bootstrap remote Terraform state in Azure Storage
-- Federate GitHub Actions to Azure via OIDC (no secrets in CI)
-- Apply the full platform: hub-spoke VNets, 2× AKS (private), ACR, KV, observability, Front Door
-- Connect to the private Cluster from your workstation
+## 1. Outcomes
 
-## Things to think through first
-1. Why is the Cluster API server private here, and what does that cost you in dev ergonomics?
-2. If `terraform apply` fails halfway through, what's the *minimum* you re-run? What's the *safe* thing to re-run?
-3. Who owns the AKS-managed `MC_*` resource group? Can you delete things in it?
+You will have provisioned, end-to-end with Terraform:
 
-## Step 1 — Bootstrap remote state (one-time)
+- A hub VNet + two regional spoke VNets (eastus2 + westus3) with peering and a baseline firewall
+- A **private** AKS cluster in each region — 3 zones, Azure CNI Overlay, Istio managed addon
+- ACR Premium (geo-replicated), 2× Key Vaults, Log Analytics + Managed Prometheus + Managed Grafana
+- Front Door + WAF (HTTP, for the ops console)
+- An external Standard Load Balancer per region (provisioned later by the `gateway-java-tcp` Service in M03)
+- Azure Database for PostgreSQL — Flexible Server primary (eastus2, HA, zone-redundant) + a geo-replica (westus3)
+- OIDC-federated GitHub Actions identity ready to drive everything after this module
+
+## 2. Where this fits in the replatform story
+
+The customer's legacy stack runs on hand-patched RHEL VMs. This module replaces *all* of the infrastructure side of that with code. Once `terraform apply` is green, every later module changes **application** or **policy**, not provisioning.
+
+## 3. Level target
+
+- **L300:** Apply the included Terraform, understand the outputs, and locate the AKS resource graph in the portal.
+- **L400:** Add the spot node pool, enable Microsoft Defender for Containers, and turn on Azure Policy add-on baseline.
+
+## 4. Talk track *(trainer)*
+
+Two ideas to land:
+
+1. **The platform/app seam is at this module's boundary.** Terraform owns everything in `infra/`; nothing in `apps/`, `k8s/`, or `gitops/` is provisioned by Terraform. If a participant ever asks "should I add the gateway-java Deployment to Terraform?" — the answer is no, and the reason is GitOps + ring-based promotion that we get to in M05.
+2. **OIDC, not service principal secrets.** Walk through the federated credential. Stress that nothing in this repo holds a long-lived Azure password.
+
+## 5. Demo cues *(trainer)*
+
+- Show the bootstrap state store getting created on your own demo subscription before participants start theirs — `terraform apply` takes ~25 min, so trigger early.
+- While the room's applies are running, open the [`infra/terraform/modules/aks/main.tf`](../../infra/terraform/modules/aks/main.tf) and walk through `local_account_disabled`, `oidc_issuer_enabled`, `workload_identity_enabled`, and the Istio addon block.
+
+## 6. Participant steps
+
+### 6.1 Bootstrap the Terraform state backend (one-time)
 ```bash
 cd infra/terraform/bootstrap
 terraform init
-terraform apply -var subscription_id=$ARM_SUBSCRIPTION_ID
-```
-This produces `backend.hcl`. Commit it (it's just storage account refs, no secrets).
-
-## Step 2 — Wire GitHub OIDC
-Create an Entra app and federated credential so `terraform apply` from GitHub Actions can assume an Azure identity **without storing a client secret**:
-
-```bash
-LAB=01
-REPO=your-user/aks-irl
-SUB=$(az account show --query id -o tsv)
-TENANT=$(az account show --query tenantId -o tsv)
-
-# 1. App registration + SP
-APP_ID=$(az ad app create --display-name "sita-lab${LAB}-tf" --query appId -o tsv)
-az ad sp create --id $APP_ID
-SP_OID=$(az ad sp show --id $APP_ID --query id -o tsv)
-
-# 2. Contributor on the subscription (learning sub only — in real life, scope tighter)
-az role assignment create --assignee $APP_ID --role Contributor --scope /subscriptions/$SUB
-az role assignment create --assignee $APP_ID --role "User Access Administrator" --scope /subscriptions/$SUB
-
-# 3. Federated credential
-az ad app federated-credential create --id $APP_ID --parameters @- <<EOF
-{ "name": "github-main", "issuer": "https://token.actions.githubusercontent.com",
-  "subject": "repo:${REPO}:ref:refs/heads/main", "audiences": ["api://AzureADTokenExchange"] }
-EOF
+terraform apply -auto-approve
+# Note the outputs: storage_account_name, container_name, resource_group
 ```
 
-Add these to GitHub repo secrets (Settings → Secrets and variables → Actions):
-- `AZURE_CLIENT_ID=$APP_ID`
-- `AZURE_TENANT_ID=$TENANT`
-- `AZURE_SUBSCRIPTION_ID=$SUB`
+### 6.2 Create the GitHub OIDC identity
+Follow [infra/terraform/README.md](../../infra/terraform/README.md). Add the three secrets to your fork:
+- `AZURE_CLIENT_ID`
+- `AZURE_TENANT_ID`
+- `AZURE_SUBSCRIPTION_ID`
 
-## Step 3 — Plan & apply the lab env
+### 6.3 Configure the lab environment
 ```bash
 cd infra/terraform/envs/lab
 cp terraform.tfvars.example terraform.tfvars
-# edit terraform.tfvars: subscription_id, github_repo, admin_object_ids
-# (lab_id defaults to "01"; leave it as-is unless you want multiple labs)
+# Edit: program, lab_id, admin_object_ids, primary_region, secondary_region
+```
 
-terraform init \
-  -backend-config=../../bootstrap/backend.hcl \
-  -backend-config="key=lab-01.tfstate"
-
+### 6.4 Plan and apply
+```bash
+terraform init -backend-config="resource_group_name=<bootstrap_rg>" \
+               -backend-config="storage_account_name=<bootstrap_sa>" \
+               -backend-config="container_name=<bootstrap_container>" \
+               -backend-config="key=lab.tfstate"
 terraform plan -out tfplan
 terraform apply tfplan
 ```
-~25 min. Use the time to read [Module 02](../02-cluster-hardening/README.md).
 
-## Step 4 — Connect to the private Cluster
-
-Because the API server is private, you cannot `kubectl` directly from your laptop. Options:
-- **Bastion + jumpbox** (recommended for L400): deploy a small VM in the hub VNet.
-- **Cloud Shell**: works because Cloud Shell can reach Azure private endpoints via the resource's VNet integration once you enable `--vnet-integration`.
-- **Az CLI command run**: shells `kubectl` into the Cluster from inside the control plane. Convenient for spot checks.
-
+### 6.5 Capture the outputs you'll need later
 ```bash
-# Shortest path: az aks command invoke
-RG=$(terraform output -raw primary_resource_group)
-AKS=$(terraform output -raw aks_primary_name)
-az aks command invoke -g $RG -n $AKS --command "kubectl get nodes -o wide"
+terraform output -raw acr_login_server
+terraform output -raw aks_primary_name
+terraform output -raw aks_secondary_name
+terraform output -raw postgres_primary_fqdn
+terraform output -raw front_door_endpoint
 ```
 
-For interactive work, run a Bastion-fronted jumpbox or use the [AKS connector script](../../scripts/connect-private-aks.sh) (creates a temp VM in the hub).
+## 7. Validation
 
-## Validation
-- `terraform output` prints both Cluster names and ACR login server.
-- `az aks command invoke ... 'kubectl get nodes'` shows 3 system Nodes in eastus2, 3 in westus3, all `Ready`, spread across zones 1/2/3.
-- Azure Managed Grafana endpoint loads and shows the **AKS / Kubernetes / Cluster** dashboard with data.
+- `terraform apply` exits 0.
+- All output values are non-empty.
+- In the Azure portal, both resource groups (`...-rg-eus2-*` and `...-rg-wus3-*`) exist with the expected resources (AKS, KV, Postgres Flex, ACR replica).
+- Tag `workshop=airline-messaging-replatform-workshopplus` is present on every RG.
 
-## Stretch (L400)
-- Tighten the OIDC subject to `repo:org/repo:environment:prod` — what changes for the deploy ring lab?
-- Enable Defender for Containers Cluster sensor; review the first detections after Module 03.
-- Replace the public Front Door endpoint with **Private Link** to ACA's private origin.
+## 8. Stretch (L400)
 
-## Cleanup (only at end of lab)
-```bash
-terraform destroy
-```
+- Set `enable_spot_pool = true` and re-apply. Inspect the resulting node pool taints and labels.
+- Enable Defender for Containers on the subscription and confirm AKS shows in the Defender plan.
+- Turn on the Azure Policy add-on baseline (`azurepolicy` builtin) and review what it flags by default.
+- Replace one Terraform module with the equivalent **Azure Verified Module** and discuss differences.
+
+## 9. Cleanup
+
+None between modules. To stop billing overnight, drop `node_pool_user_min`/`max` to 0 in `terraform.tfvars` and re-apply — keeps Postgres + ACR but parks AKS workloads.

@@ -1,0 +1,165 @@
+# gateway-java: the socket termination tier.
+# Shipped as a StatefulSet — stable Pod identities give the NLB and Istio
+# something durable to hash on, so client TCP sockets don't get yanked to a
+# different Pod every deploy. PDB is conservative; reconnect storms are the
+# enemy of this workload.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: gateway-java
+  namespace: messaging
+  labels: { app: gateway-java, version: v1, tier: data-plane }
+spec:
+  serviceName: gateway-java-headless
+  replicas: 3
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels: { app: gateway-java }
+  template:
+    metadata:
+      labels: { app: gateway-java, version: v1, tier: data-plane }
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "8080"
+    spec:
+      serviceAccountName: gateway-java
+      terminationGracePeriodSeconds: 120   # let sockets close cleanly
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: { type: RuntimeDefault }
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels: { app: gateway-java }
+      containers:
+        - name: gateway
+          image: REPLACE_ACR/gateway-java:v1        # overwritten by overlay
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: tcp-msg
+              containerPort: 4561
+            - name: tcp-tls
+              containerPort: 4562
+            - name: http
+              containerPort: 8080
+            - name: health
+              containerPort: 8081
+          env:
+            - name: APP_VERSION
+              value: v1
+            - name: REGION
+              valueFrom: { fieldRef: { fieldPath: spec.nodeName } }
+            - name: PARSER_URL
+              value: "http://parser-cpp.messaging.svc.cluster.local:9100/decode"
+          readinessProbe:
+            httpGet: { path: /readyz, port: health }
+            periodSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet: { path: /healthz, port: health }
+            periodSeconds: 10
+            failureThreshold: 3
+          resources:
+            requests: { cpu: 250m, memory: 512Mi }
+            limits:   { cpu: 2,    memory: 1536Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+---
+# Headless Service — backs the StatefulSet, gives Istio per-Pod identity.
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway-java-headless
+  namespace: messaging
+spec:
+  clusterIP: None
+  selector: { app: gateway-java }
+  ports:
+    - name: tcp-msg
+      port: 4561
+      targetPort: tcp-msg
+    - name: http
+      port: 8080
+      targetPort: http
+---
+# In-cluster Service for the ops-console → gateway HTTP control plane.
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway-java
+  namespace: messaging
+spec:
+  selector: { app: gateway-java }
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+# External TCP Service — backed by an Azure Standard Load Balancer. Bumped
+# idle timeout, source-IP affinity so reconnects stick to the same backend
+# Pod when possible.
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway-java-tcp
+  namespace: messaging
+  annotations:
+    service.beta.kubernetes.io/azure-load-balancer-tcp-idle-timeout: "30"
+    service.beta.kubernetes.io/azure-load-balancer-internal: "false"
+spec:
+  type: LoadBalancer
+  externalTrafficPolicy: Local
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800
+  selector: { app: gateway-java }
+  ports:
+    - name: tcp-msg
+      port: 4561
+      targetPort: tcp-msg
+    - name: tcp-tls
+      port: 4562
+      targetPort: tcp-tls
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: gateway-java
+  namespace: messaging
+  annotations:
+    # Filled in by Module 02 — UAMI client ID for Postgres + Key Vault access.
+    azure.workload.identity/client-id: REPLACE_UAMI_CLIENT_ID
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: gateway-java
+  namespace: messaging
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels: { app: gateway-java }
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: gateway-java
+  namespace: messaging
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: StatefulSet
+    name: gateway-java
+  minReplicas: 3
+  maxReplicas: 12
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: { type: Utilization, averageUtilization: 60 }
