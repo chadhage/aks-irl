@@ -1,0 +1,1698 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AKS &amp; Containers on Azure — Exam Prep</title>
+    <script>
+      (() => {
+        const param = new URLSearchParams(window.location.search).get("clawpilotTheme");
+        const theme =
+          param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        document.documentElement.setAttribute("data-theme", theme);
+      })();
+    </script>
+    <style>
+      :root {
+        color-scheme: light;
+        --cp-bg: #f7f4ef;
+        --cp-bg-elevated: #fcfbf8;
+        --cp-surface: #ffffff;
+        --cp-surface-soft: #f5f5f5;
+        --cp-border: #dedede;
+        --cp-border-strong: #919191;
+        --cp-text: #242424;
+        --cp-text-muted: #5c5c5c;
+        --cp-text-soft: #6f6f6f;
+        --cp-accent: #b11f4b;
+        --cp-accent-hover: #9a1a41;
+        --cp-accent-soft: rgba(177, 31, 75, 0.08);
+        --cp-accent-fg: #ffffff;
+        --cp-success: #16a34a;
+        --cp-danger: #dc2626;
+        --cp-warning: #f59e0b;
+        --cp-link: #0078d4;
+        --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.12);
+        --cp-overlay: rgba(255, 255, 255, 0.8);
+        --cp-panel: rgba(255, 255, 255, 0.86);
+        --cp-panel-strong: rgba(255, 255, 255, 0.96);
+        --cp-sheen: rgba(255, 255, 255, 0.55);
+        --cp-highlight: rgba(177, 31, 75, 0.12);
+      }
+      html[data-theme="dark"] {
+        color-scheme: dark;
+        --cp-bg: #3d3b3a;
+        --cp-bg-elevated: #343231;
+        --cp-surface: #292929;
+        --cp-surface-soft: #2e2e2e;
+        --cp-border: #474747;
+        --cp-border-strong: #5f5f5f;
+        --cp-text: #dedede;
+        --cp-text-muted: #919191;
+        --cp-text-soft: #b0b0b0;
+        --cp-accent: #fd8ea1;
+        --cp-accent-hover: #fb7b91;
+        --cp-accent-soft: rgba(253, 142, 161, 0.14);
+        --cp-accent-fg: #1a1a1a;
+        --cp-success: #4ade80;
+        --cp-danger: #f87171;
+        --cp-warning: #fbbf24;
+        --cp-link: #4da6ff;
+        --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+        --cp-overlay: rgba(41, 41, 41, 0.88);
+        --cp-panel: rgba(41, 41, 41, 0.72);
+        --cp-panel-strong: rgba(41, 41, 41, 0.96);
+        --cp-sheen: rgba(255, 255, 255, 0.04);
+        --cp-highlight: rgba(253, 142, 161, 0.12);
+      }
+
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; }
+      body {
+        font-family: "Segoe UI", Aptos, Calibri, -apple-system, BlinkMacSystemFont, sans-serif;
+        background: var(--cp-bg);
+        color: var(--cp-text);
+        line-height: 1.55;
+        min-height: 100vh;
+      }
+      code, pre, .mono { font-family: Consolas, "Courier New", Courier, monospace; font-size: 0.92em; }
+      code { background: var(--cp-surface-soft); padding: 0.1em 0.35em; border-radius: 4px; border: 1px solid var(--cp-border); }
+
+      header.top {
+        background: var(--cp-bg-elevated);
+        border-bottom: 1px solid var(--cp-border);
+        padding: 14px 28px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        position: sticky;
+        top: 0;
+        z-index: 50;
+      }
+      header.top .title { font-weight: 600; font-size: 1.05rem; }
+      header.top .title .accent { color: var(--cp-accent); }
+      header.top .meta { display: flex; gap: 18px; align-items: center; font-size: 0.9rem; color: var(--cp-text-muted); }
+      header.top .timer.warn { color: var(--cp-warning); }
+      header.top .timer.danger { color: var(--cp-danger); font-weight: 600; }
+
+      .icon-btn {
+        background: transparent;
+        border: 1px solid var(--cp-border);
+        color: var(--cp-text);
+        border-radius: 0.625rem;
+        padding: 6px 10px;
+        cursor: pointer;
+        font-size: 0.85rem;
+      }
+      .icon-btn:hover { border-color: var(--cp-border-strong); }
+
+      main { max-width: 1100px; margin: 0 auto; padding: 28px; }
+
+      .card {
+        background: var(--cp-surface);
+        border: 1px solid var(--cp-border);
+        border-radius: 16px;
+        box-shadow: 0 0 2px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.14);
+        padding: 28px;
+        margin-bottom: 20px;
+      }
+      h1 { font-size: 1.75rem; margin: 0 0 8px; }
+      h2 { font-size: 1.25rem; margin: 0 0 12px; }
+      h3 { font-size: 1.05rem; margin: 18px 0 8px; }
+      p.lead { color: var(--cp-text-muted); margin-top: 0; }
+      hr.sep { border: 0; border-top: 1px solid var(--cp-border); margin: 18px 0; }
+
+      .grid { display: grid; gap: 18px; }
+      .grid.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .grid.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .grid.cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      @media (max-width: 800px) {
+        .grid.cols-2, .grid.cols-3, .grid.cols-4 { grid-template-columns: 1fr; }
+      }
+
+      label.field { display: block; font-size: 0.85rem; color: var(--cp-text-muted); margin-bottom: 4px; }
+      .control {
+        background: var(--cp-surface);
+        color: var(--cp-text);
+        border: 1px solid var(--cp-border);
+        border-radius: 0.625rem;
+        padding: 9px 12px;
+        font-size: 0.95rem;
+        width: 100%;
+        font-family: inherit;
+      }
+      .control:focus { outline: none; border-color: var(--cp-accent); box-shadow: 0 0 0 3px var(--cp-accent-soft); }
+      .checkbox-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+      .checkbox-row input { width: 16px; height: 16px; accent-color: var(--cp-accent); }
+      .help { font-size: 0.82rem; color: var(--cp-text-soft); margin-top: 4px; }
+
+      .btn {
+        background: var(--cp-accent);
+        color: var(--cp-accent-fg);
+        border: 1px solid var(--cp-accent);
+        border-radius: 0.625rem;
+        padding: 10px 18px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+      }
+      .btn:hover { background: var(--cp-accent-hover); border-color: var(--cp-accent-hover); }
+      .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+      .btn.secondary {
+        background: var(--cp-surface);
+        color: var(--cp-text);
+        border: 1px solid var(--cp-border-strong);
+      }
+      .btn.secondary:hover { background: var(--cp-surface-soft); }
+      .btn.ghost { background: transparent; border: 1px solid var(--cp-border); color: var(--cp-text); }
+      .btn.ghost:hover { background: var(--cp-surface-soft); }
+      .btn.danger { background: var(--cp-danger); border-color: var(--cp-danger); color: #fff; }
+
+      .actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+      .actions.start { justify-content: flex-start; margin-top: 8px; }
+
+      /* Question screen */
+      .q-layout { display: grid; grid-template-columns: 1fr 260px; gap: 20px; align-items: start; }
+      @media (max-width: 900px) { .q-layout { grid-template-columns: 1fr; } }
+      .q-meta { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; font-size: 0.82rem; color: var(--cp-text-muted); }
+      .pill {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: var(--cp-surface-soft);
+        border: 1px solid var(--cp-border);
+        font-size: 0.75rem;
+        color: var(--cp-text-muted);
+      }
+      .pill.l200 { background: rgba(22, 163, 74, 0.10); color: var(--cp-success); border-color: rgba(22, 163, 74, 0.32); }
+      .pill.l300 { background: rgba(245, 158, 11, 0.12); color: var(--cp-warning); border-color: rgba(245, 158, 11, 0.32); }
+      .pill.l400 { background: rgba(220, 38, 38, 0.10); color: var(--cp-danger); border-color: rgba(220, 38, 38, 0.32); }
+      .pill.accent { background: var(--cp-accent-soft); color: var(--cp-accent); border-color: var(--cp-accent); }
+
+      .q-stem {
+        font-size: 1.05rem;
+        margin: 6px 0 18px;
+      }
+      .options { display: flex; flex-direction: column; gap: 10px; }
+      .option {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 12px 14px;
+        border: 1px solid var(--cp-border);
+        border-radius: 0.625rem;
+        background: var(--cp-surface);
+        cursor: pointer;
+        transition: border-color 120ms, background 120ms;
+      }
+      .option:hover { border-color: var(--cp-border-strong); background: var(--cp-surface-soft); }
+      .option.selected { border-color: var(--cp-accent); background: var(--cp-accent-soft); }
+      .option input { margin-top: 4px; accent-color: var(--cp-accent); }
+      .option .letter {
+        flex: 0 0 auto;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: var(--cp-surface-soft);
+        border: 1px solid var(--cp-border);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--cp-text-muted);
+      }
+      .option.selected .letter { background: var(--cp-accent); color: var(--cp-accent-fg); border-color: var(--cp-accent); }
+
+      /* Review correct / incorrect */
+      .option.correct { border-color: var(--cp-success); background: rgba(22, 163, 74, 0.08); }
+      .option.correct .letter { background: var(--cp-success); color: #fff; border-color: var(--cp-success); }
+      .option.incorrect { border-color: var(--cp-danger); background: rgba(220, 38, 38, 0.08); }
+      .option.incorrect .letter { background: var(--cp-danger); color: #fff; border-color: var(--cp-danger); }
+
+      .nav-actions { display: flex; gap: 10px; justify-content: space-between; align-items: center; margin-top: 22px; }
+      .nav-actions .left, .nav-actions .right { display: flex; gap: 10px; }
+
+      /* Side panel - question grid */
+      .side-panel { position: sticky; top: 78px; }
+      .side-panel h3 { margin-top: 0; }
+      .q-grid {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 6px;
+      }
+      .q-cell {
+        aspect-ratio: 1 / 1;
+        border-radius: 6px;
+        border: 1px solid var(--cp-border);
+        background: var(--cp-surface);
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--cp-text-muted);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: inherit;
+      }
+      .q-cell:hover { border-color: var(--cp-border-strong); }
+      .q-cell.current { border-color: var(--cp-accent); box-shadow: 0 0 0 2px var(--cp-accent-soft); }
+      .q-cell.answered { background: var(--cp-accent); color: var(--cp-accent-fg); border-color: var(--cp-accent); }
+      .q-cell.flagged { box-shadow: inset 0 0 0 2px var(--cp-warning); }
+      .q-cell.answered.flagged { box-shadow: inset 0 0 0 2px var(--cp-warning); }
+      .legend { margin-top: 12px; display: flex; flex-direction: column; gap: 4px; font-size: 0.78rem; color: var(--cp-text-muted); }
+      .legend .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; vertical-align: middle; margin-right: 6px; }
+      .legend .swatch.unanswered { background: var(--cp-surface); border: 1px solid var(--cp-border); }
+      .legend .swatch.answered-sw { background: var(--cp-accent); }
+      .legend .swatch.flagged-sw { background: transparent; border: 2px solid var(--cp-warning); }
+
+      /* Results */
+      .score-hero {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 28px;
+        align-items: center;
+      }
+      @media (max-width: 700px) { .score-hero { grid-template-columns: 1fr; } }
+      .score-circle {
+        width: 160px;
+        height: 160px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        border: 6px solid var(--cp-border);
+      }
+      .score-circle.pass { border-color: var(--cp-success); }
+      .score-circle.fail { border-color: var(--cp-danger); }
+      .score-circle .scaled { font-size: 2.2rem; font-weight: 700; }
+      .score-circle .label { font-size: 0.8rem; color: var(--cp-text-muted); }
+      .verdict-pass { color: var(--cp-success); font-weight: 700; }
+      .verdict-fail { color: var(--cp-danger); font-weight: 700; }
+
+      .breakdown-row {
+        display: grid;
+        grid-template-columns: 220px 1fr 70px;
+        gap: 14px;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--cp-border);
+      }
+      .breakdown-row:last-child { border-bottom: none; }
+      .bar {
+        height: 10px;
+        background: var(--cp-surface-soft);
+        border-radius: 999px;
+        overflow: hidden;
+        position: relative;
+      }
+      .bar > span {
+        display: block;
+        height: 100%;
+        background: var(--cp-accent);
+        border-radius: 999px;
+      }
+      .bar > span.good { background: var(--cp-success); }
+      .bar > span.warn { background: var(--cp-warning); }
+      .bar > span.bad { background: var(--cp-danger); }
+
+      .review-item {
+        border: 1px solid var(--cp-border);
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 12px;
+        background: var(--cp-surface);
+      }
+      .review-item.correct-item { border-left: 4px solid var(--cp-success); }
+      .review-item.incorrect-item { border-left: 4px solid var(--cp-danger); }
+      .review-item.unanswered-item { border-left: 4px solid var(--cp-text-muted); }
+      .review-item h4 { margin: 0 0 8px; font-size: 1rem; }
+      .explanation {
+        margin-top: 12px;
+        padding: 10px 12px;
+        background: var(--cp-surface-soft);
+        border-radius: 8px;
+        font-size: 0.92rem;
+        color: var(--cp-text-muted);
+        border-left: 3px solid var(--cp-accent);
+      }
+      .explanation strong { color: var(--cp-text); }
+
+      .filter-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0; }
+      .filter-row button {
+        font-size: 0.82rem;
+        padding: 6px 10px;
+      }
+      .filter-row button.active { background: var(--cp-accent); color: var(--cp-accent-fg); border-color: var(--cp-accent); }
+
+      /* Modal */
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+        padding: 20px;
+      }
+      .modal {
+        background: var(--cp-surface);
+        border: 1px solid var(--cp-border);
+        border-radius: 16px;
+        padding: 24px;
+        max-width: 480px;
+        width: 100%;
+        box-shadow: var(--cp-shadow);
+      }
+      .modal h2 { margin-top: 0; }
+
+      .hidden { display: none !important; }
+    </style>
+  </head>
+  <body>
+    <header class="top">
+      <div class="title">
+        <span class="accent">AKS</span> &amp; Containers on Azure — Exam Prep
+      </div>
+      <div class="meta">
+        <div id="status-text">Configure your exam to begin</div>
+        <div id="timer" class="timer hidden"></div>
+        <button class="icon-btn" id="theme-toggle" title="Toggle theme">🌓</button>
+      </div>
+    </header>
+
+    <main>
+      <!-- ============ START SCREEN ============ -->
+      <section id="screen-start" class="card">
+        <h1>Microsoft-style certification practice</h1>
+        <p class="lead">
+          Randomized, scored multiple-choice exam over a question bank covering AKS and containers on Azure.
+          Levels are blended from foundational (L200) through expert (L400). Passing score follows the
+          Microsoft convention of <strong>700/1000 scaled</strong>.
+        </p>
+
+        <div class="grid cols-3">
+          <div>
+            <label class="field" for="cfg-count">Number of questions</label>
+            <select id="cfg-count" class="control">
+              <option value="10">10 — quick check</option>
+              <option value="25" selected>25 — standard practice</option>
+              <option value="40">40 — full exam length</option>
+              <option value="60">60 — long-form drill</option>
+              <option value="0">All available</option>
+            </select>
+          </div>
+          <div>
+            <label class="field" for="cfg-time">Time limit</label>
+            <select id="cfg-time" class="control">
+              <option value="0">Untimed</option>
+              <option value="900">15 minutes</option>
+              <option value="1800" selected>30 minutes</option>
+              <option value="2700">45 minutes</option>
+              <option value="3600">60 minutes</option>
+              <option value="5400">90 minutes</option>
+            </select>
+          </div>
+          <div>
+            <label class="field" for="cfg-pass">Passing score (scaled /1000)</label>
+            <select id="cfg-pass" class="control">
+              <option value="600">600 (lenient)</option>
+              <option value="700" selected>700 (MS standard)</option>
+              <option value="800">800 (strict)</option>
+            </select>
+          </div>
+        </div>
+
+        <hr class="sep" />
+
+        <div class="grid cols-2">
+          <div>
+            <h3>Levels to include</h3>
+            <div id="cfg-levels"></div>
+            <p class="help">L200 = foundational · L300 = working professional · L400 = expert / design</p>
+          </div>
+          <div>
+            <h3>Domains to include</h3>
+            <div id="cfg-domains" style="max-height: 240px; overflow-y: auto;"></div>
+          </div>
+        </div>
+
+        <hr class="sep" />
+
+        <div class="grid cols-2">
+          <div class="checkbox-row">
+            <input type="checkbox" id="cfg-shuffle-options" checked />
+            <label for="cfg-shuffle-options">Shuffle answer-option order on each question</label>
+          </div>
+          <div class="checkbox-row">
+            <input type="checkbox" id="cfg-immediate" />
+            <label for="cfg-immediate">Show correct answer immediately after each question (study mode)</label>
+          </div>
+        </div>
+
+        <div id="cfg-summary" class="help" style="margin-top: 12px;"></div>
+
+        <div class="actions start">
+          <button class="btn" id="btn-start">Start exam</button>
+          <button class="btn ghost" id="btn-reset-cfg">Reset to defaults</button>
+        </div>
+      </section>
+
+      <!-- ============ EXAM SCREEN ============ -->
+      <section id="screen-exam" class="card hidden">
+        <div class="q-layout">
+          <div>
+            <div class="q-meta">
+              <span id="q-counter" class="pill accent">Question 1 of 25</span>
+              <span id="q-domain" class="pill">Domain</span>
+              <span id="q-level" class="pill l300">L300</span>
+              <span id="q-multi" class="pill hidden">Select all that apply</span>
+            </div>
+            <div class="q-stem" id="q-stem"></div>
+            <div class="options" id="q-options"></div>
+
+            <div id="immediate-feedback" class="explanation hidden"></div>
+
+            <div class="nav-actions">
+              <div class="left">
+                <button class="btn ghost" id="btn-prev">‹ Previous</button>
+                <button class="btn ghost" id="btn-flag">⚑ Mark for review</button>
+              </div>
+              <div class="right">
+                <button class="btn secondary" id="btn-review-all">Review all</button>
+                <button class="btn" id="btn-next">Next ›</button>
+                <button class="btn danger hidden" id="btn-submit">Submit exam</button>
+              </div>
+            </div>
+          </div>
+
+          <aside class="side-panel">
+            <h3>Navigator</h3>
+            <div class="q-grid" id="q-grid"></div>
+            <div class="legend">
+              <div><span class="swatch unanswered"></span>Unanswered</div>
+              <div><span class="swatch answered-sw"></span>Answered</div>
+              <div><span class="swatch flagged-sw"></span>Flagged for review</div>
+            </div>
+            <hr class="sep" />
+            <button class="btn danger" id="btn-submit-side" style="width:100%">Submit exam</button>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ============ RESULTS SCREEN ============ -->
+      <section id="screen-results" class="card hidden">
+        <div class="score-hero">
+          <div class="score-circle" id="score-circle">
+            <div class="scaled" id="score-scaled">—</div>
+            <div class="label">/ 1000 scaled</div>
+          </div>
+          <div>
+            <h1 style="margin: 0;">Exam complete</h1>
+            <p style="margin: 6px 0;">
+              <span id="verdict"></span>
+            </p>
+            <p class="lead" id="results-summary"></p>
+          </div>
+        </div>
+
+        <hr class="sep" />
+
+        <h2>Performance by domain</h2>
+        <div id="domain-breakdown"></div>
+
+        <h2 style="margin-top: 22px;">Performance by level</h2>
+        <div id="level-breakdown"></div>
+
+        <hr class="sep" />
+
+        <h2>Question review</h2>
+        <div class="filter-row" id="review-filters">
+          <button class="btn ghost active" data-filter="all">All</button>
+          <button class="btn ghost" data-filter="incorrect">Incorrect</button>
+          <button class="btn ghost" data-filter="correct">Correct</button>
+          <button class="btn ghost" data-filter="unanswered">Unanswered</button>
+          <button class="btn ghost" data-filter="flagged">Flagged</button>
+        </div>
+        <div id="review-list"></div>
+
+        <hr class="sep" />
+
+        <div class="actions">
+          <button class="btn ghost" id="btn-retry-missed">Retry missed only</button>
+          <button class="btn secondary" id="btn-new-same">New exam (same settings)</button>
+          <button class="btn" id="btn-new-config">New exam (reconfigure)</button>
+        </div>
+      </section>
+    </main>
+
+    <!-- ============ CONFIRM SUBMIT MODAL ============ -->
+    <div id="modal-submit" class="modal-backdrop hidden">
+      <div class="modal">
+        <h2>Submit your exam?</h2>
+        <p id="submit-warning"></p>
+        <div class="actions">
+          <button class="btn ghost" id="btn-cancel-submit">Keep working</button>
+          <button class="btn danger" id="btn-confirm-submit">Submit now</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ========================= QUESTION BANK =========================
+      // type: "single" or "multi"
+      // level: 200 | 300 | 400
+      // correct: index (single) or array of indices (multi)
+      const QUESTION_BANK = [
+        // -------------------- Container fundamentals --------------------
+        {
+          id: "cf01", domain: "Container fundamentals", level: 200, type: "single",
+          stem: "What does an Azure Container Registry (ACR) repository store?",
+          options: [
+            "Running container instances",
+            "Container images and their tags / digests",
+            "Kubernetes manifests",
+            "Compiled application binaries outside of any OCI artifact"
+          ],
+          correct: 1,
+          explanation: "An ACR repository stores container images as OCI artifacts identified by tag and content digest. Running instances live on a host (AKS, ACI, App Service), not in the registry."
+        },
+        {
+          id: "cf02", domain: "Container fundamentals", level: 200, type: "single",
+          stem: "Which Azure service is purpose-built for short-lived, single-container workloads (e.g., burst, build agents, scheduled jobs) without managing a cluster?",
+          options: [
+            "Azure Kubernetes Service (AKS)",
+            "Azure Container Apps (ACA)",
+            "Azure Container Instances (ACI)",
+            "Azure App Service for Containers"
+          ],
+          correct: 2,
+          explanation: "ACI runs one or a few containers per group with per-second billing and no orchestrator. ACA is for long-running serverless containers; AKS is full Kubernetes; App Service is for web apps."
+        },
+        {
+          id: "cf03", domain: "Container fundamentals", level: 300, type: "single",
+          stem: "Why is referencing a container image by digest (e.g., <code>@sha256:...</code>) considered more production-safe than by tag?",
+          options: [
+            "Digests are shorter and easier to type",
+            "Digests bypass registry rate limits",
+            "A digest is content-addressable and immutable; a tag can be moved to a different image",
+            "Digests automatically include vulnerability scan results"
+          ],
+          correct: 2,
+          explanation: "A digest is the SHA-256 hash of the image content — if the bytes change, the digest changes. A tag is just a movable label; the same tag can point to different images over time unless the registry enforces immutability."
+        },
+        {
+          id: "cf04", domain: "Container fundamentals", level: 300, type: "multi",
+          stem: "Which of the following are <strong>Premium-tier-only</strong> ACR capabilities? (Choose all that apply.)",
+          options: [
+            "Geo-replication across regions",
+            "Private endpoints / firewall rules",
+            "Anonymous pull",
+            "Customer-managed keys for encryption-at-rest",
+            "Token-based repository-scoped permissions"
+          ],
+          correct: [0, 1, 3, 4],
+          explanation: "Geo-replication, Private Link, CMK, and scoped tokens are Premium-only. Anonymous pull is available on all tiers (when enabled)."
+        },
+        {
+          id: "cf05", domain: "Container fundamentals", level: 400, type: "single",
+          stem: "You operate a multi-region active-active workload on AKS with image pulls from a single Premium ACR in East US. Pull latency from your West Europe cluster is high during scale-out events. What is the most appropriate first action?",
+          options: [
+            "Switch to a Standard SKU registry to reduce overhead",
+            "Enable ACR geo-replication and add a West Europe replica",
+            "Mirror images manually to a separate Standard ACR per region",
+            "Disable Notation signature verification to speed up the pull"
+          ],
+          correct: 1,
+          explanation: "Geo-replication on Premium ACR lets the registry serve pulls from a regional replica using the same login server name — no app changes. Manual mirroring works but is operationally heavier and breaks the single-source-of-truth model."
+        },
+
+        // -------------------- AKS cluster design --------------------
+        {
+          id: "ad01", domain: "AKS cluster design", level: 200, type: "single",
+          stem: "Which of the following is true about a <strong>private</strong> AKS API server?",
+          options: [
+            "The API server is reachable from the public internet but requires a token",
+            "The API server is only reachable from within the cluster VNet (or peered/connected networks)",
+            "The API server is replaced by an Azure-managed proxy with no IP address",
+            "The API server stops accepting <code>kubectl</code> requests entirely"
+          ],
+          correct: 1,
+          explanation: "A private cluster places the API server behind a Private Endpoint in the cluster VNet. Reaching it from outside requires VPN, ExpressRoute, a jumpbox, or a tool like <code>az aks command invoke</code> (which runs server-side)."
+        },
+        {
+          id: "ad02", domain: "AKS cluster design", level: 300, type: "single",
+          stem: "Which of the following AKS networking choices is <strong>effectively irreversible</strong> after the cluster is created?",
+          options: [
+            "Node SKU size",
+            "Network plugin (kubenet vs. Azure CNI vs. Overlay)",
+            "Cluster autoscaler min/max counts",
+            "RBAC mode (Azure RBAC vs. Kubernetes RBAC)"
+          ],
+          correct: 1,
+          explanation: "Changing the network plugin requires recreating the cluster. Node SKU is per-pool and you can add a new pool; autoscaler ranges are tunable; RBAC mode can be switched between Azure and Kubernetes RBAC."
+        },
+        {
+          id: "ad03", domain: "AKS cluster design", level: 300, type: "multi",
+          stem: "Which statements about AKS Availability Zones are correct? (Choose all that apply.)",
+          options: [
+            "Spreading node pools across at least two zones survives a single-zone outage",
+            "Zone redundancy requires Premium SSD v2 or zone-redundant storage for Azure Disk-backed PVCs to fail over cleanly",
+            "All Azure regions support three Availability Zones",
+            "The AKS control plane is automatically zone-redundant when nodes span zones"
+          ],
+          correct: [0, 1, 3],
+          explanation: "Not every region has three AZs (some have one or none). Disk PVCs are zone-pinned by default; ZRS or a cross-zone solution is needed for clean failover. AKS-managed control planes are zone-redundant where the region supports it."
+        },
+        {
+          id: "ad04", domain: "AKS cluster design", level: 400, type: "single",
+          stem: "You inherit an AKS cluster with <code>localAccountsDisabled=false</code> and Kubernetes RBAC only (no Entra integration). What is the most urgent change to harden access without taking the workload down?",
+          options: [
+            "Rotate the cluster admin kubeconfig and trust it as the only access path",
+            "Enable AKS-managed Microsoft Entra ID integration with Azure RBAC, grant break-glass to a single Entra group, then disable local accounts",
+            "Move to a private cluster and rely on network isolation",
+            "Replace all <code>RoleBinding</code> resources with <code>ClusterRoleBinding</code> resources"
+          ],
+          correct: 1,
+          explanation: "Long-lived kubeconfigs are bearer credentials with no MFA and no audit beyond the API server. Move auth to Entra-integrated RBAC, keep a break-glass Entra group, then disable local accounts. The other options either trade one risk for another or weaken authorization."
+        },
+
+        // -------------------- Networking and ingress --------------------
+        {
+          id: "ni01", domain: "Networking and ingress", level: 200, type: "single",
+          stem: "Which Kubernetes Service type causes AKS to provision an Azure Load Balancer with a public IP?",
+          options: [
+            "ClusterIP",
+            "NodePort",
+            "LoadBalancer",
+            "ExternalName"
+          ],
+          correct: 2,
+          explanation: "<code>type: LoadBalancer</code> instructs the AKS cloud-controller-manager to provision an Azure Load Balancer (public by default, internal with the <code>service.beta.kubernetes.io/azure-load-balancer-internal</code> annotation)."
+        },
+        {
+          id: "ni02", domain: "Networking and ingress", level: 200, type: "single",
+          stem: "What is the default idle timeout of an Azure Load Balancer for TCP flows?",
+          options: ["30 seconds", "5 minutes", "4 minutes", "30 minutes"],
+          correct: 2,
+          explanation: "The default idle timeout is 4 minutes (configurable up to 100 minutes). Long-lived TCP workloads either need TCP keepalives, an application-level heartbeat, or a larger configured timeout."
+        },
+        {
+          id: "ni03", domain: "Networking and ingress", level: 300, type: "single",
+          stem: "Your AKS cluster uses Azure CNI Overlay. Compared with classic Azure CNI, what is the primary advantage?",
+          options: [
+            "Pod IPs are routable on the VNet without summarization",
+            "Pods do not consume VNet IP space; only nodes do",
+            "It removes the need for Network Policy",
+            "It enables IPv6 by default"
+          ],
+          correct: 1,
+          explanation: "Overlay assigns Pod IPs from a separate overlay CIDR managed by AKS. Only nodes consume VNet IPs, which dramatically reduces IP exhaustion in large clusters. Classic CNI assigns each pod a VNet IP."
+        },
+        {
+          id: "ni04", domain: "Networking and ingress", level: 300, type: "single",
+          stem: "For an HTTPS request that traverses Azure Front Door → AKS NGINX Ingress → Pod, how many TLS terminations are <strong>possible</strong>?",
+          options: ["Exactly one (at Front Door)", "Up to two (Front Door + Ingress)", "Up to three (Front Door, Ingress, Pod sidecar/mTLS)", "Always zero — Front Door tunnels TLS"],
+          correct: 2,
+          explanation: "Front Door terminates and re-originates TLS, the Ingress controller terminates again, and a service mesh (Istio, Linkerd) can terminate mTLS at the pod sidecar. Whether all three happen depends on configuration."
+        },
+        {
+          id: "ni05", domain: "Networking and ingress", level: 400, type: "single",
+          stem: "A long-lived TCP socket workload on AKS sees client sessions drop at almost exactly 30 minutes. Which AKS-related cause should you investigate first?",
+          options: [
+            "Pod OOMKilled by the kubelet",
+            "Azure Load Balancer or NAT Gateway idle timeout exceeded",
+            "Cluster autoscaler reclaiming a node",
+            "Argo CD auto-sync rolling the workload"
+          ],
+          correct: 1,
+          explanation: "Default ALB idle timeout is 4 minutes; the maximum is 100 minutes. A 30-minute drop almost always traces to a load balancer / NAT idle timeout that is shorter than the application's keepalive interval."
+        },
+
+        // -------------------- Identity, RBAC, secrets --------------------
+        {
+          id: "id01", domain: "Identity, RBAC, secrets", level: 200, type: "single",
+          stem: "Which Kubernetes RBAC primitive grants permissions <strong>cluster-wide</strong> instead of within a single namespace?",
+          options: ["Role + RoleBinding", "ClusterRole + ClusterRoleBinding", "ServiceAccount", "PodSecurityPolicy"],
+          correct: 1,
+          explanation: "ClusterRole + ClusterRoleBinding is cluster-scoped. A ClusterRole can also be referenced by a namespaced RoleBinding, but then the grant is scoped to that namespace."
+        },
+        {
+          id: "id02", domain: "Identity, RBAC, secrets", level: 300, type: "single",
+          stem: "Which technology is the Microsoft-recommended replacement for the deprecated AAD Pod Identity on AKS?",
+          options: [
+            "Azure Active Directory Pod Identity v2",
+            "AKS Workload Identity (OIDC federation with Entra)",
+            "Azure RBAC for Kubernetes Authorization",
+            "Managed Service Identity sidecar"
+          ],
+          correct: 1,
+          explanation: "AKS Workload Identity uses the cluster's OIDC issuer to federate a Kubernetes ServiceAccount to a user-assigned managed identity in Entra. AAD Pod Identity (v1) is deprecated and not supported."
+        },
+        {
+          id: "id03", domain: "Identity, RBAC, secrets", level: 300, type: "single",
+          stem: "Which Azure RBAC role grants a workload identity read access to secret values in a Key Vault configured for RBAC authorization?",
+          options: ["Key Vault Reader", "Key Vault Contributor", "Key Vault Secrets User", "Key Vault Administrator"],
+          correct: 2,
+          explanation: "<code>Key Vault Reader</code> only reads the vault metadata, not the secret content. <code>Key Vault Secrets User</code> grants <code>Get</code>/<code>List</code> on secret values. Contributor and Administrator are over-privileged for a pod."
+        },
+        {
+          id: "id04", domain: "Identity, RBAC, secrets", level: 400, type: "single",
+          stem: "A federated credential is configured for subject <code>system:serviceaccount:payments:billing-app</code>, but the deployment uses ServiceAccount <code>billing</code>. What symptom does the pod show at runtime?",
+          options: [
+            "ImagePullBackOff",
+            "CrashLoopBackOff with a clear Kubernetes RBAC error",
+            "Token acquisition fails with an Entra error such as <code>AADSTS70021</code> (no matching federated identity credential)",
+            "The pod silently runs without an identity but appears healthy"
+          ],
+          correct: 2,
+          explanation: "The projected SA token's <code>sub</code> claim must exactly match the federated credential subject. A mismatch produces an Entra error on token exchange — typically <code>AADSTS70021</code>. The pod itself starts normally; the failure happens on the first call to Azure."
+        },
+
+        // -------------------- GitOps and progressive delivery --------------------
+        {
+          id: "go01", domain: "GitOps and progressive delivery", level: 200, type: "single",
+          stem: "Which AKS extension installs Flux v2 in a supported, Azure-managed way?",
+          options: [
+            "<code>microsoft.flux</code> cluster extension",
+            "<code>microsoft.gitops</code> ARM resource",
+            "Manual Helm install only",
+            "Flux is included in every AKS cluster by default"
+          ],
+          correct: 0,
+          explanation: "The <code>microsoft.flux</code> cluster extension is the supported install path for Flux v2 on AKS and Arc-enabled Kubernetes."
+        },
+        {
+          id: "go02", domain: "GitOps and progressive delivery", level: 300, type: "single",
+          stem: "What does Argo CD's <code>OutOfSync</code> status mean?",
+          options: [
+            "The pods are crashing",
+            "Argo CD itself is unreachable",
+            "Live cluster state differs from the manifests defined in Git",
+            "The Git repository is unreachable"
+          ],
+          correct: 2,
+          explanation: "<code>OutOfSync</code> is purely a comparison verdict between desired state in Git and observed state in the cluster. <code>Healthy</code>/<code>Degraded</code> is the separate runtime-health signal."
+        },
+        {
+          id: "go03", domain: "GitOps and progressive delivery", level: 300, type: "single",
+          stem: "A GitOps controller (Argo CD or Flux) loses connectivity to its Git repository for one hour. What happens to the running workload by default?",
+          options: [
+            "All pods are immediately deleted",
+            "The workload keeps running unchanged; only new sync attempts fail",
+            "The cluster API server enters read-only mode",
+            "Argo CD rolls back to the last known good revision"
+          ],
+          correct: 1,
+          explanation: "GitOps controllers reconcile desired state — they do not actively keep workloads alive. Losing Git access pauses reconciliation. The kubelet keeps existing pods running normally."
+        },
+        {
+          id: "go04", domain: "GitOps and progressive delivery", level: 400, type: "single",
+          stem: "You roll prod back via the Argo CD UI to a previous revision, but the Git history still shows the bad commit at HEAD. What is the correct post-incident action?",
+          options: [
+            "Force-push a clean history to <code>main</code>",
+            "Open a Git revert PR for the bad commit so Git reflects the actual desired state and re-sync from Git",
+            "Leave the cluster in its UI-rolled-back state; Git drift is acceptable in incidents",
+            "Disable Argo CD auto-sync permanently"
+          ],
+          correct: 1,
+          explanation: "GitOps requires Git to be the source of truth. A UI rollback is a temporary measure; the durable fix is a revert PR so the next auto-sync (or any new sync) does not reintroduce the bad state."
+        },
+
+        // -------------------- Autoscaling and capacity --------------------
+        {
+          id: "as01", domain: "Autoscaling and capacity", level: 200, type: "single",
+          stem: "Which container field does the Kubernetes scheduler use to decide where a pod can fit on a node?",
+          options: [
+            "<code>resources.limits.cpu</code>",
+            "<code>resources.requests.cpu</code> and <code>requests.memory</code>",
+            "<code>nodeName</code>",
+            "<code>spec.priority</code>"
+          ],
+          correct: 1,
+          explanation: "The scheduler uses <code>requests</code> to bin-pack pods onto nodes. <code>limits</code> bound runtime usage but do not influence scheduling decisions."
+        },
+        {
+          id: "as02", domain: "Autoscaling and capacity", level: 300, type: "single",
+          stem: "Which capability does KEDA provide that the standard Horizontal Pod Autoscaler does not?",
+          options: [
+            "Scaling based on Azure Service Bus queue length, Kafka lag, or HTTP request rate",
+            "CPU-based scaling",
+            "Memory-based scaling",
+            "Node scaling"
+          ],
+          correct: 0,
+          explanation: "KEDA adds event-driven scalers (Service Bus, Storage Queues, Kafka, Prometheus queries, and 50+ others) and supports scale-to-zero. HPA only scales on metrics exposed via the metrics APIs (CPU, memory, custom)."
+        },
+        {
+          id: "as03", domain: "Autoscaling and capacity", level: 300, type: "multi",
+          stem: "Which workload characteristics make a pod a good candidate for an AKS <strong>Spot</strong> node pool? (Choose all that apply.)",
+          options: [
+            "Tolerant of eviction with little notice (30 seconds)",
+            "Single-replica stateful database",
+            "Batch processing that can be safely retried",
+            "Workloads with strict per-pod uptime SLAs",
+            "Workloads with built-in checkpoint / resume logic"
+          ],
+          correct: [0, 2, 4],
+          explanation: "Spot nodes can be evicted with ~30 seconds notice. They suit eviction-tolerant batch and checkpointable workloads. Single-replica stateful and SLA-bound workloads are bad fits."
+        },
+        {
+          id: "as04", domain: "Autoscaling and capacity", level: 400, type: "single",
+          stem: "A workload bursts from 0 → 5000 RPS in under 10 seconds. KEDA is configured. What single factor most likely dominates the time-to-first-response?",
+          options: [
+            "Network latency between client and Front Door",
+            "Container image pull onto cold nodes that the Cluster Autoscaler just added",
+            "Kubernetes API server throttling KEDA",
+            "Prometheus scrape interval"
+          ],
+          correct: 1,
+          explanation: "When the existing node pool cannot absorb the surge, the Cluster Autoscaler must add nodes; those nodes then pull the image before pods can become Ready. Image pull on cold nodes is usually the dominant cliff. Mitigations include node-image pre-pull, warm pools, and smaller images."
+        },
+
+        // -------------------- Reliability and chaos --------------------
+        {
+          id: "rl01", domain: "Reliability and chaos", level: 200, type: "single",
+          stem: "What does a <code>PodDisruptionBudget</code> protect against?",
+          options: [
+            "Node hardware failure (involuntary disruption)",
+            "Voluntary disruptions such as <code>kubectl drain</code> and node-pool upgrades",
+            "Network partitions",
+            "Storage corruption"
+          ],
+          correct: 1,
+          explanation: "PDBs only constrain <em>voluntary</em> disruptions (drain, evictions from upgrades). They do not — and cannot — prevent a node from failing involuntarily."
+        },
+        {
+          id: "rl02", domain: "Reliability and chaos", level: 300, type: "single",
+          stem: "Define the difference between an SLO and an SLA.",
+          options: [
+            "They are interchangeable terms",
+            "An SLO is an internal target; an SLA is an external contractual commitment with consequences for violation",
+            "An SLA is more permissive than an SLO",
+            "An SLO is for availability only; an SLA is for latency only"
+          ],
+          correct: 1,
+          explanation: "SLOs are internal objectives that drive engineering priority. SLAs are customer-facing contracts (often with financial penalties). Healthy practice keeps the SLO stricter than the SLA so you have warning before contract breach."
+        },
+        {
+          id: "rl03", domain: "Reliability and chaos", level: 300, type: "single",
+          stem: "An SLO of 99.9% availability over 30 days allows how much downtime?",
+          options: ["About 8.6 seconds", "About 43 minutes", "About 4.3 hours", "About 8.6 hours"],
+          correct: 1,
+          explanation: "30 days × 0.001 ≈ 43 minutes. 99.99% (\"four nines\") is about 4.3 minutes/month."
+        },
+        {
+          id: "rl04", domain: "Reliability and chaos", level: 400, type: "single",
+          stem: "A zone fails. Your AKS cluster spans three zones with even pod distribution and surviving zones are at 100% of normal load each. What is the most likely second-order failure?",
+          options: [
+            "Pods restart in a loop due to image pull errors",
+            "Surviving zones are pushed to ~150% capacity, triggering throttling and SLO breach",
+            "The control plane goes offline",
+            "ETCd loses quorum"
+          ],
+          correct: 1,
+          explanation: "If each zone runs at 100%, losing one zone forces the remaining 2 zones to absorb the third's traffic — landing them at 150%. Right-size for N-1 capacity, not N."
+        },
+
+        // -------------------- Observability --------------------
+        {
+          id: "ob01", domain: "Observability", level: 200, type: "single",
+          stem: "Which probe gates traffic to a pod by removing it from Service endpoints when it returns failure, without restarting the pod?",
+          options: ["livenessProbe", "readinessProbe", "startupProbe", "shutdownProbe"],
+          correct: 1,
+          explanation: "Liveness restarts the container on failure. Readiness only removes the pod from Service endpoints — used to drain or warm up. Startup defers liveness for slow-starting workloads."
+        },
+        {
+          id: "ob02", domain: "Observability", level: 300, type: "single",
+          stem: "What does Azure Monitor managed Prometheus typically replace in an AKS observability stack?",
+          options: [
+            "Container Insights logging",
+            "Self-hosted Prometheus and its long-term storage",
+            "The Kubernetes API server",
+            "Azure Application Insights"
+          ],
+          correct: 1,
+          explanation: "Managed Prometheus removes the operational burden of running and scaling your own Prometheus and long-term storage (Thanos/Mimir/Cortex). It pairs with Azure Managed Grafana."
+        },
+        {
+          id: "ob03", domain: "Observability", level: 300, type: "single",
+          stem: "Why do SLO burn-rate alerts typically use <strong>recording rules</strong> rather than computing the rate at alert time?",
+          options: [
+            "Recording rules can call external APIs",
+            "Pre-computed series are cheaper to query and produce consistent alert timing",
+            "Alerting rules cannot use <code>rate()</code>",
+            "Recording rules bypass the Prometheus query engine"
+          ],
+          correct: 1,
+          explanation: "SLO burn-rate windows (1h, 6h) are expensive to compute on demand for every alert evaluation. Recording rules persist the result and let alerts evaluate cheaply at high frequency."
+        },
+
+        // -------------------- Security and supply chain --------------------
+        {
+          id: "se01", domain: "Security and supply chain", level: 200, type: "single",
+          stem: "Why does an AKS-managed kubelet typically not need an <code>imagePullSecret</code> to pull from an attached ACR?",
+          options: [
+            "All ACR images are anonymous",
+            "AKS attaches a kubelet identity with <code>AcrPull</code> on the registry; image pulls use that managed identity",
+            "AKS uses a shared service principal stored in the cluster",
+            "ACR allows unauthenticated pulls from any AKS cluster"
+          ],
+          correct: 1,
+          explanation: "<code>az aks update --attach-acr</code> grants the kubelet identity the <code>AcrPull</code> role on the registry. Pulls use that identity transparently — no Kubernetes Secret required."
+        },
+        {
+          id: "se02", domain: "Security and supply chain", level: 300, type: "single",
+          stem: "Pod Security Admission (PSA) replaced Pod Security Policies. Which PSA profile is appropriate for a hardened workload that must not run as root and must not request host namespaces?",
+          options: ["privileged", "baseline", "restricted", "default"],
+          correct: 2,
+          explanation: "<code>restricted</code> enforces the strictest pod security controls (non-root, no host networking/IPC/PID, no privilege escalation, capability drop, etc.). <code>baseline</code> blocks the most dangerous escalations but allows more. <code>privileged</code> is unrestricted."
+        },
+        {
+          id: "se03", domain: "Security and supply chain", level: 300, type: "single",
+          stem: "Which feature does Microsoft Defender for Containers add on top of native AKS controls?",
+          options: [
+            "It replaces Kubernetes RBAC",
+            "Image vulnerability assessment for ACR, runtime threat detection in AKS, and Kubernetes audit-log anomaly detection",
+            "It signs all images automatically",
+            "It manages cluster upgrades"
+          ],
+          correct: 1,
+          explanation: "Defender for Containers covers registry scanning, runtime sensor-based detection, and audit-log analysis for AKS. It complements (does not replace) RBAC, signing, and operational tooling."
+        },
+        {
+          id: "se04", domain: "Security and supply chain", level: 400, type: "single",
+          stem: "You want to refuse deployment of unsigned images at the cluster. Which combination is Microsoft's recommended supply-chain path on AKS?",
+          options: [
+            "ACR Tasks signature + Open Policy Agent Gatekeeper",
+            "Notation signatures stored in ACR + Image Integrity (ratify) admission controller on AKS",
+            "Cosign signatures + Argo CD pre-sync hooks",
+            "GPG-signed images + manual review"
+          ],
+          correct: 1,
+          explanation: "Microsoft's AKS-native path is Notation (for OCI-native signatures stored as referrers in ACR) verified at admission by the AKS Image Integrity add-on (built on ratify). Cosign also works but is not the first-party recommendation."
+        },
+
+        // -------------------- Cost and FinOps --------------------
+        {
+          id: "co01", domain: "Cost and FinOps", level: 200, type: "single",
+          stem: "Which AKS cost component is <strong>free</strong> on the AKS Free tier?",
+          options: ["Worker node compute", "Attached managed disks", "The managed control plane (API server, etcd)", "Egress data transfer"],
+          correct: 2,
+          explanation: "AKS Free tier waives the control-plane SLA fee but you still pay for nodes, disks, load balancers, and bandwidth. Standard and Premium tiers add SLA and LTS coverage with a per-cluster fee."
+        },
+        {
+          id: "co02", domain: "Cost and FinOps", level: 300, type: "single",
+          stem: "Which dimension does the AKS cost analysis add-on let you break down spend by?",
+          options: [
+            "Only by subscription",
+            "By Kubernetes namespace, label, and workload — mapped to underlying Azure resource cost",
+            "Only by node pool",
+            "Only by region"
+          ],
+          correct: 1,
+          explanation: "The cost-analysis add-on (preview at GA in 2024) attributes node and other resource cost down to namespace, label, and workload — the missing piece for chargeback on shared clusters."
+        },
+        {
+          id: "co03", domain: "Cost and FinOps", level: 400, type: "single",
+          stem: "A team's CPU requests are set to 1000m across the fleet but average utilization is 8%. What is the highest-leverage cost lever?",
+          options: [
+            "Switch all nodes to Spot",
+            "Right-size <code>resources.requests</code> based on observed P95 + safety margin, and let bin-packing pull node count down",
+            "Reduce <code>resources.limits</code>",
+            "Move to a smaller node SKU without changing requests"
+          ],
+          correct: 1,
+          explanation: "Over-set <code>requests</code> waste schedulable capacity (the scheduler reserves them even if unused), forcing more nodes. Tightening requests lets the scheduler pack pods denser; the Cluster Autoscaler then removes nodes. Limits do not affect scheduling."
+        },
+
+        // -------------------- Storage and stateful --------------------
+        {
+          id: "st01", domain: "Storage and stateful", level: 200, type: "single",
+          stem: "Which Azure CSI driver supports <code>ReadWriteMany</code> (RWX) access mode out of the box?",
+          options: [
+            "<code>disk.csi.azure.com</code> (Azure Disk)",
+            "<code>file.csi.azure.com</code> (Azure Files)",
+            "<code>blob.csi.azure.com</code> (Azure Blob) only with FUSE",
+            "<code>local-storage</code>"
+          ],
+          correct: 1,
+          explanation: "Azure Disk is block storage and supports RWO only (a single node mount at a time, in standard config). Azure Files (SMB/NFS) natively supports RWX, which is why it is the typical choice for shared volumes."
+        },
+        {
+          id: "st02", domain: "Storage and stateful", level: 300, type: "single",
+          stem: "Why is a standard zonal Azure Disk a poor fit for a stateful pod that may be rescheduled to a different Availability Zone after node failure?",
+          options: [
+            "Disks cost more across zones",
+            "A zonal disk is pinned to one Availability Zone and cannot be attached to a node in a different zone",
+            "Disks have a hard 100 GB size limit",
+            "Disks cannot be encrypted in some zones"
+          ],
+          correct: 1,
+          explanation: "A standard managed disk lives in one zone. A pod rescheduled to a node in a different zone cannot mount it. Solutions: Azure Disk ZRS (zone-redundant), Azure NetApp Files, or a storage backend with built-in replication."
+        },
+        {
+          id: "st03", domain: "Storage and stateful", level: 400, type: "single",
+          stem: "Which guarantee does a Kubernetes <code>StatefulSet</code> provide that a <code>Deployment</code> does not?",
+          options: [
+            "Higher CPU priority for pods",
+            "Stable, ordinal pod identities and stable PersistentVolumeClaim mapping per ordinal",
+            "Automatic backup of PVCs",
+            "Built-in leader election"
+          ],
+          correct: 1,
+          explanation: "StatefulSets create pods with stable names (<code>app-0</code>, <code>app-1</code>) and bind each pod to a stable PVC that persists across rescheduling. Useful for databases and clustered systems that need predictable identity."
+        },
+
+        // -------------------- Disaster recovery --------------------
+        {
+          id: "dr01", domain: "Disaster recovery", level: 200, type: "single",
+          stem: "Which acronym answers \"how much data can I lose in the worst case?\"",
+          options: ["RTO (Recovery Time Objective)", "RPO (Recovery Point Objective)", "MTTR (Mean Time To Recovery)", "MTBF (Mean Time Between Failures)"],
+          correct: 1,
+          explanation: "RPO = acceptable data loss measured in time (e.g., 5 minutes of writes). RTO = acceptable downtime."
+        },
+        {
+          id: "dr02", domain: "Disaster recovery", level: 300, type: "single",
+          stem: "For DNS-based regional failover (e.g., Azure Front Door), what bounds the achievable RTO?",
+          options: [
+            "Only the time to fail health probes",
+            "The DNS record TTL <em>plus</em> client cache behavior and connection retry policy",
+            "The Front Door SLA only",
+            "Only the time to fail the database over"
+          ],
+          correct: 1,
+          explanation: "Even with low TTLs, recursive resolvers and stubborn HTTP client connection pools mean some clients hang on to the old endpoint past the TTL. Front Door's anycast IP avoids this for HTTP/S because the IP does not change."
+        },
+        {
+          id: "dr03", domain: "Disaster recovery", level: 400, type: "single",
+          stem: "Active-passive failover for an AKS + Postgres Flexible Server stack: which step is <strong>not safely reversible</strong>?",
+          options: [
+            "Updating the DNS record from primary to secondary",
+            "Scaling the secondary AKS node pool up",
+            "Promoting the Postgres read replica to primary",
+            "Disabling Argo CD auto-sync on the primary"
+          ],
+          correct: 2,
+          explanation: "Promoting a read replica breaks its replication link with the original primary; rolling that back means rebuilding replication (or restoring from backup). DNS, scale operations, and sync flags are all easily reversible."
+        },
+
+        // -------------------- Day-2 operations --------------------
+        {
+          id: "d201", domain: "Day-2 operations", level: 200, type: "single",
+          stem: "What is the supported version skew between <code>kubectl</code> client and the AKS API server?",
+          options: ["No skew supported", "± 1 minor version", "± 2 minor versions", "± 3 minor versions"],
+          correct: 1,
+          explanation: "Kubernetes upstream supports <code>kubectl</code> within ± 1 minor of the server. Outside that window, behavior is undefined and Microsoft Support will ask you to align before troubleshooting."
+        },
+        {
+          id: "d202", domain: "Day-2 operations", level: 300, type: "single",
+          stem: "Which AKS auto-upgrade channel is the typical recommended posture for production clusters that want patch hygiene but not bleeding-edge minor versions?",
+          options: ["<code>none</code>", "<code>patch</code> or <code>stable</code>", "<code>rapid</code>", "<code>preview</code>"],
+          correct: 1,
+          explanation: "<code>patch</code> takes only the latest patch on the current minor; <code>stable</code> moves through GA minors with a one-version lag. <code>rapid</code> aggressively chases the latest GA minor and is too fast for most production. <code>none</code> means you own all upgrades manually."
+        },
+        {
+          id: "d203", domain: "Day-2 operations", level: 400, type: "single",
+          stem: "A <code>kubectl drain</code> on a node hangs because a single pod has a misconfigured PDB blocking eviction. What is the safest first response?",
+          options: [
+            "Force-delete the pod and rely on rescheduling",
+            "Edit the PDB to allow the disruption, then retry the drain",
+            "Delete the node from the Azure portal",
+            "Cordon every node in the cluster"
+          ],
+          correct: 1,
+          explanation: "Adjust the PDB (raise <code>maxUnavailable</code> or lower <code>minAvailable</code>) so the eviction is allowed, then retry the drain cleanly. Force-deleting the pod skips graceful shutdown and breaks any preStop hook or in-flight work."
+        },
+
+        // -------------------- Containers beyond AKS --------------------
+        {
+          id: "be01", domain: "Containers beyond AKS", level: 200, type: "single",
+          stem: "Which Azure container platform offers <strong>scale-to-zero</strong> for a long-running HTTP service without managing a Kubernetes cluster?",
+          options: ["AKS only", "Azure App Service for Containers", "Azure Container Apps", "Azure Container Instances"],
+          correct: 2,
+          explanation: "Azure Container Apps natively supports scale-to-zero for HTTP and event-driven workloads (KEDA under the hood) and exposes a managed environment without surfacing Kubernetes primitives."
+        },
+        {
+          id: "be02", domain: "Containers beyond AKS", level: 300, type: "single",
+          stem: "A team needs a sidecar (e.g., Envoy filter) and a custom CRD installed cluster-wide. Which Azure container platform is the right fit?",
+          options: [
+            "Azure Container Instances",
+            "Azure Container Apps",
+            "Azure App Service for Containers",
+            "Azure Kubernetes Service (AKS)"
+          ],
+          correct: 3,
+          explanation: "Custom CRDs and arbitrary sidecars require direct Kubernetes API access. ACA's environment abstracts Kubernetes; ACI is single-container groups; App Service is web-focused. AKS is the only fit when you need cluster-level extensibility."
+        },
+        {
+          id: "be03", domain: "Containers beyond AKS", level: 400, type: "single",
+          stem: "Decision: a 6-person team needs to ship a single-container internal API with managed-identity auth to 4 Azure services, automatic TLS, and zero infrastructure work. Which platform best matches?",
+          options: [
+            "AKS with NGINX Ingress and Workload Identity",
+            "Azure Container Apps with managed identity",
+            "Azure Container Instances behind Application Gateway",
+            "Self-hosted Kubernetes on Azure VMs"
+          ],
+          correct: 1,
+          explanation: "ACA gives managed ingress with TLS, managed identity, KEDA-based autoscaling, and no cluster ops — exactly the profile for a small team shipping a single-image API. AKS is over-investment for this scope."
+        }
+      ];
+
+      // ========================= APP STATE =========================
+      const DEFAULTS = {
+        count: 25, timeLimit: 1800, passingScore: 700,
+        levels: { 200: true, 300: true, 400: true },
+        domains: {}, // populated from bank
+        shuffleOptions: true, immediate: false
+      };
+      const ALL_DOMAINS = [...new Set(QUESTION_BANK.map(q => q.domain))];
+      ALL_DOMAINS.forEach(d => DEFAULTS.domains[d] = true);
+
+      const state = {
+        cfg: structuredClone(DEFAULTS),
+        exam: null, // { questions, answers, flags, currentIdx, startedAt, timerHandle }
+        results: null,
+        reviewFilter: "all"
+      };
+
+      // ========================= UTILITIES =========================
+      function shuffle(arr) {
+        const a = arr.slice();
+        for (let i = a.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+      }
+      function fmtTime(seconds) {
+        if (seconds < 0) seconds = 0;
+        const m = Math.floor(seconds / 60), s = seconds % 60;
+        return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+      }
+      function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+      }
+      // Stems and explanations are author-controlled; we render them as HTML.
+      function renderHtml(s) { return String(s); }
+
+      function $(id) { return document.getElementById(id); }
+
+      // ========================= START SCREEN =========================
+      function renderStartScreen() {
+        // levels
+        const lvlBox = $("cfg-levels");
+        lvlBox.innerHTML = [200, 300, 400].map(l => `
+          <div class="checkbox-row">
+            <input type="checkbox" id="lvl-${l}" data-level="${l}" ${state.cfg.levels[l] ? "checked" : ""}/>
+            <label for="lvl-${l}">L${l} — ${l === 200 ? "Foundational" : l === 300 ? "Working professional" : "Expert / design"}</label>
+          </div>`).join("");
+        lvlBox.querySelectorAll("input").forEach(cb => {
+          cb.onchange = e => {
+            state.cfg.levels[Number(e.target.dataset.level)] = e.target.checked;
+            updateSummary();
+          };
+        });
+
+        // domains
+        const dBox = $("cfg-domains");
+        dBox.innerHTML = ALL_DOMAINS.map((d, i) => `
+          <div class="checkbox-row">
+            <input type="checkbox" id="dom-${i}" data-dom="${escapeHtml(d)}" ${state.cfg.domains[d] ? "checked" : ""}/>
+            <label for="dom-${i}">${escapeHtml(d)} <span class="pill" style="font-size:0.68rem;">${QUESTION_BANK.filter(q=>q.domain===d).length}</span></label>
+          </div>`).join("");
+        dBox.querySelectorAll("input").forEach(cb => {
+          cb.onchange = e => {
+            state.cfg.domains[e.target.dataset.dom] = e.target.checked;
+            updateSummary();
+          };
+        });
+
+        // others
+        $("cfg-count").value = String(state.cfg.count);
+        $("cfg-time").value = String(state.cfg.timeLimit);
+        $("cfg-pass").value = String(state.cfg.passingScore);
+        $("cfg-shuffle-options").checked = state.cfg.shuffleOptions;
+        $("cfg-immediate").checked = state.cfg.immediate;
+
+        $("cfg-count").onchange = e => { state.cfg.count = Number(e.target.value); updateSummary(); };
+        $("cfg-time").onchange = e => { state.cfg.timeLimit = Number(e.target.value); updateSummary(); };
+        $("cfg-pass").onchange = e => { state.cfg.passingScore = Number(e.target.value); updateSummary(); };
+        $("cfg-shuffle-options").onchange = e => { state.cfg.shuffleOptions = e.target.checked; };
+        $("cfg-immediate").onchange = e => { state.cfg.immediate = e.target.checked; updateSummary(); };
+
+        updateSummary();
+      }
+
+      function poolForCfg() {
+        return QUESTION_BANK.filter(q =>
+          state.cfg.levels[q.level] && state.cfg.domains[q.domain]
+        );
+      }
+
+      function updateSummary() {
+        const pool = poolForCfg();
+        const requested = state.cfg.count === 0 ? pool.length : Math.min(state.cfg.count, pool.length);
+        const lvls = Object.entries(state.cfg.levels).filter(([_,v])=>v).map(([k])=>"L"+k).join(", ");
+        const doms = Object.values(state.cfg.domains).filter(Boolean).length;
+        const tl = state.cfg.timeLimit === 0 ? "untimed" : fmtTime(state.cfg.timeLimit);
+        const mode = state.cfg.immediate ? " · Study mode (instant feedback)" : "";
+        $("cfg-summary").textContent =
+          `Pool: ${pool.length} eligible · Will serve: ${requested} questions · Levels: ${lvls || "(none)"} · Domains: ${doms}/${ALL_DOMAINS.length} · Time: ${tl}${mode}`;
+        $("btn-start").disabled = requested === 0;
+      }
+
+      $("btn-reset-cfg").onclick = () => {
+        state.cfg = structuredClone(DEFAULTS);
+        ALL_DOMAINS.forEach(d => state.cfg.domains[d] = true);
+        renderStartScreen();
+      };
+      $("btn-start").onclick = startExam;
+
+      // ========================= EXAM =========================
+      function startExam() {
+        const pool = poolForCfg();
+        if (pool.length === 0) return;
+        const wanted = state.cfg.count === 0 ? pool.length : Math.min(state.cfg.count, pool.length);
+        const picked = shuffle(pool).slice(0, wanted);
+
+        const questions = picked.map(q => {
+          // create randomized option mapping while keeping correctness intact
+          const order = state.cfg.shuffleOptions ? shuffle(q.options.map((_,i)=>i)) : q.options.map((_,i)=>i);
+          const optionsDisplayed = order.map(i => q.options[i]);
+          let correctDisplayed;
+          if (q.type === "multi") {
+            const correctSet = new Set(q.correct);
+            correctDisplayed = order.map((origIdx, dispIdx) => correctSet.has(origIdx) ? dispIdx : -1).filter(x => x >= 0);
+          } else {
+            correctDisplayed = order.indexOf(q.correct);
+          }
+          return { ...q, optionsDisplayed, correctDisplayed };
+        });
+
+        state.exam = {
+          questions,
+          answers: questions.map(() => null), // null | number | number[]
+          flags: questions.map(() => false),
+          submittedFeedback: questions.map(() => false),
+          currentIdx: 0,
+          startedAt: Date.now(),
+          timeLimit: state.cfg.timeLimit,
+          passingScore: state.cfg.passingScore,
+          immediate: state.cfg.immediate,
+          timerHandle: null
+        };
+
+        $("screen-start").classList.add("hidden");
+        $("screen-results").classList.add("hidden");
+        $("screen-exam").classList.remove("hidden");
+        $("status-text").textContent = "Exam in progress";
+
+        if (state.exam.timeLimit > 0) {
+          $("timer").classList.remove("hidden");
+          tickTimer();
+          state.exam.timerHandle = setInterval(tickTimer, 1000);
+        } else {
+          $("timer").classList.add("hidden");
+        }
+
+        renderQuestion();
+        renderNavigator();
+      }
+
+      function tickTimer() {
+        const elapsed = Math.floor((Date.now() - state.exam.startedAt) / 1000);
+        const remaining = state.exam.timeLimit - elapsed;
+        const el = $("timer");
+        el.textContent = `⏱ ${fmtTime(remaining)} remaining`;
+        el.classList.remove("warn", "danger");
+        if (remaining <= 60) el.classList.add("danger");
+        else if (remaining <= 300) el.classList.add("warn");
+        if (remaining <= 0) {
+          clearInterval(state.exam.timerHandle);
+          finalizeExam(true);
+        }
+      }
+
+      function renderQuestion() {
+        const ex = state.exam;
+        const q = ex.questions[ex.currentIdx];
+
+        $("q-counter").textContent = `Question ${ex.currentIdx + 1} of ${ex.questions.length}`;
+        $("q-domain").textContent = q.domain;
+        const lvlPill = $("q-level");
+        lvlPill.textContent = `L${q.level}`;
+        lvlPill.className = `pill l${q.level}`;
+        $("q-multi").classList.toggle("hidden", q.type !== "multi");
+
+        $("q-stem").innerHTML = renderHtml(q.stem);
+
+        const letters = ["A","B","C","D","E","F","G","H"];
+        const optBox = $("q-options");
+        const ans = ex.answers[ex.currentIdx];
+        const feedbackVisible = ex.immediate && ex.submittedFeedback[ex.currentIdx];
+
+        optBox.innerHTML = q.optionsDisplayed.map((txt, i) => {
+          let selected = false;
+          if (q.type === "multi") selected = Array.isArray(ans) && ans.includes(i);
+          else selected = ans === i;
+
+          let extraClass = "";
+          if (feedbackVisible) {
+            const isCorrect = q.type === "multi" ? q.correctDisplayed.includes(i) : q.correctDisplayed === i;
+            if (isCorrect) extraClass = " correct";
+            else if (selected) extraClass = " incorrect";
+          }
+
+          return `
+            <label class="option${selected ? " selected" : ""}${extraClass}" data-idx="${i}">
+              <span class="letter">${letters[i]}</span>
+              <input type="${q.type === "multi" ? "checkbox" : "radio"}" name="opt"
+                     ${selected ? "checked" : ""} ${feedbackVisible ? "disabled" : ""}/>
+              <span>${renderHtml(txt)}</span>
+            </label>`;
+        }).join("");
+
+        if (!feedbackVisible) {
+          optBox.querySelectorAll(".option").forEach(el => {
+            el.onclick = (e) => {
+              if (e.target.tagName === "INPUT") return; // let native handle
+              toggleOption(Number(el.dataset.idx));
+            };
+            el.querySelector("input").onchange = () => toggleOption(Number(el.dataset.idx));
+          });
+        }
+
+        const fb = $("immediate-feedback");
+        if (feedbackVisible) {
+          const wasCorrect = isCurrentAnswerCorrect();
+          fb.classList.remove("hidden");
+          fb.innerHTML = `<strong>${wasCorrect ? "✅ Correct." : "❌ Incorrect."}</strong> ${renderHtml(q.explanation)}`;
+        } else {
+          fb.classList.add("hidden");
+        }
+
+        // Flag button state
+        $("btn-flag").textContent = ex.flags[ex.currentIdx] ? "⚑ Flagged (remove flag)" : "⚑ Mark for review";
+
+        // Prev disabled at first
+        $("btn-prev").disabled = ex.currentIdx === 0;
+        const isLast = ex.currentIdx === ex.questions.length - 1;
+        $("btn-next").classList.toggle("hidden", isLast && !ex.immediate);
+        $("btn-submit").classList.toggle("hidden", !isLast);
+
+        renderNavigator();
+      }
+
+      function toggleOption(idx) {
+        const ex = state.exam;
+        const q = ex.questions[ex.currentIdx];
+        if (ex.immediate && ex.submittedFeedback[ex.currentIdx]) return;
+
+        if (q.type === "single") {
+          ex.answers[ex.currentIdx] = idx;
+        } else {
+          const cur = ex.answers[ex.currentIdx];
+          const set = new Set(Array.isArray(cur) ? cur : []);
+          if (set.has(idx)) set.delete(idx); else set.add(idx);
+          ex.answers[ex.currentIdx] = [...set].sort((a,b)=>a-b);
+          if (ex.answers[ex.currentIdx].length === 0) ex.answers[ex.currentIdx] = null;
+        }
+        renderQuestion();
+      }
+
+      function isCurrentAnswerCorrect() {
+        const ex = state.exam;
+        const q = ex.questions[ex.currentIdx];
+        return isAnswerCorrect(q, ex.answers[ex.currentIdx]);
+      }
+      function isAnswerCorrect(q, ans) {
+        if (ans === null || ans === undefined) return false;
+        if (q.type === "single") return ans === q.correctDisplayed;
+        // multi: exact match
+        const c = q.correctDisplayed.slice().sort((a,b)=>a-b);
+        const a = (Array.isArray(ans) ? ans.slice() : []).sort((a,b)=>a-b);
+        if (c.length !== a.length) return false;
+        return c.every((v,i) => v === a[i]);
+      }
+
+      function renderNavigator() {
+        const ex = state.exam;
+        const grid = $("q-grid");
+        grid.innerHTML = ex.questions.map((_, i) => {
+          const ans = ex.answers[i];
+          const answered = ans !== null && !(Array.isArray(ans) && ans.length === 0);
+          const classes = ["q-cell"];
+          if (answered) classes.push("answered");
+          if (ex.flags[i]) classes.push("flagged");
+          if (i === ex.currentIdx) classes.push("current");
+          return `<button class="${classes.join(" ")}" data-i="${i}" title="Question ${i+1}">${i+1}</button>`;
+        }).join("");
+        grid.querySelectorAll("button").forEach(b => {
+          b.onclick = () => { state.exam.currentIdx = Number(b.dataset.i); renderQuestion(); };
+        });
+      }
+
+      $("btn-prev").onclick = () => {
+        if (state.exam.currentIdx > 0) { state.exam.currentIdx--; renderQuestion(); }
+      };
+      $("btn-next").onclick = () => {
+        const ex = state.exam;
+        if (ex.immediate && !ex.submittedFeedback[ex.currentIdx] && ex.answers[ex.currentIdx] !== null) {
+          ex.submittedFeedback[ex.currentIdx] = true;
+          renderQuestion();
+          return;
+        }
+        if (ex.currentIdx < ex.questions.length - 1) { ex.currentIdx++; renderQuestion(); }
+      };
+      $("btn-flag").onclick = () => {
+        state.exam.flags[state.exam.currentIdx] = !state.exam.flags[state.exam.currentIdx];
+        renderQuestion();
+      };
+      $("btn-review-all").onclick = () => promptSubmit();
+      $("btn-submit").onclick = () => promptSubmit();
+      $("btn-submit-side").onclick = () => promptSubmit();
+
+      function promptSubmit() {
+        const ex = state.exam;
+        const unanswered = ex.answers.filter(a => a === null || (Array.isArray(a) && a.length === 0)).length;
+        const flagged = ex.flags.filter(Boolean).length;
+        $("submit-warning").innerHTML =
+          `You have <strong>${unanswered}</strong> unanswered and <strong>${flagged}</strong> flagged question(s). ` +
+          (unanswered > 0 ? "Unanswered questions count as incorrect. " : "") +
+          `Submitting will end the exam.`;
+        $("modal-submit").classList.remove("hidden");
+      }
+      $("btn-cancel-submit").onclick = () => $("modal-submit").classList.add("hidden");
+      $("btn-confirm-submit").onclick = () => { $("modal-submit").classList.add("hidden"); finalizeExam(false); };
+
+      // ========================= RESULTS =========================
+      function finalizeExam(timeUp) {
+        if (state.exam.timerHandle) clearInterval(state.exam.timerHandle);
+
+        const ex = state.exam;
+        const items = ex.questions.map((q, i) => {
+          const ans = ex.answers[i];
+          const answered = ans !== null && !(Array.isArray(ans) && ans.length === 0);
+          const correct = answered && isAnswerCorrect(q, ans);
+          return { q, ans, answered, correct, flagged: ex.flags[i] };
+        });
+
+        const total = items.length;
+        const correctCount = items.filter(i => i.correct).length;
+        const rawPct = total === 0 ? 0 : (correctCount / total) * 100;
+        // MS-style scaled: floor(rawPct/100 * 1000) — simple but conventional
+        const scaled = Math.round(rawPct * 10);
+
+        // breakdowns
+        const byDomain = {};
+        const byLevel = { 200: { correct: 0, total: 0 }, 300: { correct: 0, total: 0 }, 400: { correct: 0, total: 0 } };
+        items.forEach(it => {
+          const d = it.q.domain;
+          if (!byDomain[d]) byDomain[d] = { correct: 0, total: 0 };
+          byDomain[d].total++;
+          if (it.correct) byDomain[d].correct++;
+          byLevel[it.q.level].total++;
+          if (it.correct) byLevel[it.q.level].correct++;
+        });
+
+        state.results = { items, total, correctCount, rawPct, scaled, byDomain, byLevel, timeUp };
+
+        renderResults();
+
+        $("screen-exam").classList.add("hidden");
+        $("screen-results").classList.remove("hidden");
+        $("status-text").textContent = "Exam complete";
+        $("timer").classList.add("hidden");
+      }
+
+      function renderResults() {
+        const r = state.results;
+        const pass = r.scaled >= state.exam.passingScore;
+
+        const circle = $("score-circle");
+        circle.classList.remove("pass", "fail");
+        circle.classList.add(pass ? "pass" : "fail");
+        $("score-scaled").textContent = r.scaled;
+
+        $("verdict").innerHTML = pass
+          ? `<span class="verdict-pass">PASS</span> — at or above the ${state.exam.passingScore} / 1000 threshold.`
+          : `<span class="verdict-fail">FAIL</span> — below the ${state.exam.passingScore} / 1000 threshold.`;
+        const elapsed = Math.floor((Date.now() - state.exam.startedAt) / 1000);
+        $("results-summary").textContent =
+          `${r.correctCount} of ${r.total} correct (${r.rawPct.toFixed(1)}%). ` +
+          `Time used: ${fmtTime(elapsed)}` + (r.timeUp ? " (time expired)." : ".");
+
+        // domain breakdown
+        $("domain-breakdown").innerHTML = Object.entries(r.byDomain)
+          .sort((a,b) => (a[1].correct/a[1].total) - (b[1].correct/b[1].total))
+          .map(([dom, v]) => {
+            const pct = (v.correct / v.total) * 100;
+            const cls = pct >= 70 ? "good" : pct >= 50 ? "warn" : "bad";
+            return `
+              <div class="breakdown-row">
+                <div>${escapeHtml(dom)}</div>
+                <div class="bar"><span class="${cls}" style="width:${pct}%"></span></div>
+                <div style="text-align:right;">${v.correct}/${v.total}</div>
+              </div>`;
+          }).join("") || `<p class="help">No domain data.</p>`;
+
+        // level breakdown
+        $("level-breakdown").innerHTML = [200, 300, 400]
+          .filter(l => r.byLevel[l].total > 0)
+          .map(l => {
+            const v = r.byLevel[l];
+            const pct = (v.correct / v.total) * 100;
+            const cls = pct >= 70 ? "good" : pct >= 50 ? "warn" : "bad";
+            const label = l === 200 ? "L200 — Foundational" : l === 300 ? "L300 — Working professional" : "L400 — Expert / design";
+            return `
+              <div class="breakdown-row">
+                <div>${label}</div>
+                <div class="bar"><span class="${cls}" style="width:${pct}%"></span></div>
+                <div style="text-align:right;">${v.correct}/${v.total}</div>
+              </div>`;
+          }).join("");
+
+        renderReviewList();
+
+        // bind filter buttons
+        document.querySelectorAll("#review-filters button").forEach(b => {
+          b.onclick = () => {
+            document.querySelectorAll("#review-filters button").forEach(x => x.classList.remove("active"));
+            b.classList.add("active");
+            state.reviewFilter = b.dataset.filter;
+            renderReviewList();
+          };
+        });
+      }
+
+      function renderReviewList() {
+        const r = state.results;
+        const filter = state.reviewFilter;
+        const filtered = r.items
+          .map((it, i) => ({ it, i }))
+          .filter(({ it }) => {
+            switch (filter) {
+              case "correct": return it.correct;
+              case "incorrect": return it.answered && !it.correct;
+              case "unanswered": return !it.answered;
+              case "flagged": return it.flagged;
+              default: return true;
+            }
+          });
+        const letters = ["A","B","C","D","E","F","G","H"];
+
+        const list = $("review-list");
+        if (filtered.length === 0) {
+          list.innerHTML = `<p class="help">No items match this filter.</p>`;
+          return;
+        }
+        list.innerHTML = filtered.map(({ it, i }) => {
+          const q = it.q;
+          const cls = it.correct ? "correct-item" : it.answered ? "incorrect-item" : "unanswered-item";
+          const yourAnsTxt = (() => {
+            if (!it.answered) return "<em>not answered</em>";
+            if (q.type === "single") return `${letters[it.ans]}. ${renderHtml(q.optionsDisplayed[it.ans])}`;
+            return it.ans.map(a => `${letters[a]}. ${renderHtml(q.optionsDisplayed[a])}`).join("<br/>");
+          })();
+          const correctTxt = (() => {
+            if (q.type === "single") return `${letters[q.correctDisplayed]}. ${renderHtml(q.optionsDisplayed[q.correctDisplayed])}`;
+            return q.correctDisplayed.map(c => `${letters[c]}. ${renderHtml(q.optionsDisplayed[c])}`).join("<br/>");
+          })();
+          return `
+            <div class="review-item ${cls}">
+              <h4>Q${i+1} · ${escapeHtml(q.domain)} <span class="pill l${q.level}">L${q.level}</span> ${it.flagged ? '<span class="pill" style="color:var(--cp-warning);border-color:var(--cp-warning);">⚑ flagged</span>' : ""}</h4>
+              <div>${renderHtml(q.stem)}</div>
+              <div style="margin-top:10px;"><strong>Your answer:</strong><br/>${yourAnsTxt}</div>
+              ${!it.correct ? `<div style="margin-top:6px;"><strong>Correct answer:</strong><br/>${correctTxt}</div>` : ""}
+              <div class="explanation"><strong>Why:</strong> ${renderHtml(q.explanation)}</div>
+            </div>`;
+        }).join("");
+      }
+
+      $("btn-new-config").onclick = () => {
+        $("screen-results").classList.add("hidden");
+        $("screen-start").classList.remove("hidden");
+        $("status-text").textContent = "Configure your exam to begin";
+        renderStartScreen();
+      };
+      $("btn-new-same").onclick = () => { startExam(); };
+      $("btn-retry-missed").onclick = () => {
+        const missedIds = new Set(state.results.items.filter(i => !i.correct).map(i => i.q.id));
+        if (missedIds.size === 0) return;
+        // temporarily override cfg to retry just missed
+        const saved = state.cfg.count;
+        // we cheat by injecting a filtered pool into startExam via a small fork:
+        const pool = QUESTION_BANK.filter(q => missedIds.has(q.id));
+        const picked = shuffle(pool);
+        const questions = picked.map(q => {
+          const order = state.cfg.shuffleOptions ? shuffle(q.options.map((_,i)=>i)) : q.options.map((_,i)=>i);
+          const optionsDisplayed = order.map(i => q.options[i]);
+          let correctDisplayed;
+          if (q.type === "multi") {
+            const correctSet = new Set(q.correct);
+            correctDisplayed = order.map((origIdx, dispIdx) => correctSet.has(origIdx) ? dispIdx : -1).filter(x => x >= 0);
+          } else {
+            correctDisplayed = order.indexOf(q.correct);
+          }
+          return { ...q, optionsDisplayed, correctDisplayed };
+        });
+        state.exam = {
+          questions,
+          answers: questions.map(() => null),
+          flags: questions.map(() => false),
+          submittedFeedback: questions.map(() => false),
+          currentIdx: 0,
+          startedAt: Date.now(),
+          timeLimit: state.cfg.timeLimit,
+          passingScore: state.cfg.passingScore,
+          immediate: state.cfg.immediate,
+          timerHandle: null
+        };
+        $("screen-results").classList.add("hidden");
+        $("screen-exam").classList.remove("hidden");
+        $("status-text").textContent = `Retry — ${questions.length} missed question(s)`;
+        if (state.exam.timeLimit > 0) {
+          $("timer").classList.remove("hidden");
+          tickTimer();
+          state.exam.timerHandle = setInterval(tickTimer, 1000);
+        }
+        renderQuestion();
+        renderNavigator();
+      };
+
+      // ========================= THEME TOGGLE =========================
+      $("theme-toggle").onclick = () => {
+        const cur = document.documentElement.getAttribute("data-theme");
+        document.documentElement.setAttribute("data-theme", cur === "dark" ? "light" : "dark");
+      };
+
+      // ========================= INIT =========================
+      renderStartScreen();
+    </script>
+  </body>
+</html>

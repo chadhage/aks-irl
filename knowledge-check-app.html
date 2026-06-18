@@ -1,0 +1,891 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AKS &amp; Containers on Azure — Knowledge Checks</title>
+    <script>
+      (() => {
+        const param = new URLSearchParams(window.location.search).get("clawpilotTheme");
+        const theme =
+          param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        document.documentElement.setAttribute("data-theme", theme);
+      })();
+    </script>
+    <style>
+      :root {
+        color-scheme: light;
+        --cp-bg: #f7f4ef;
+        --cp-bg-elevated: #fcfbf8;
+        --cp-surface: #ffffff;
+        --cp-surface-soft: #f5f5f5;
+        --cp-border: #dedede;
+        --cp-border-strong: #919191;
+        --cp-text: #242424;
+        --cp-text-muted: #5c5c5c;
+        --cp-text-soft: #6f6f6f;
+        --cp-accent: #b11f4b;
+        --cp-accent-hover: #9a1a41;
+        --cp-accent-soft: rgba(177, 31, 75, 0.08);
+        --cp-accent-fg: #ffffff;
+        --cp-success: #16a34a;
+        --cp-danger: #dc2626;
+        --cp-warning: #f59e0b;
+        --cp-link: #0078d4;
+        --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.12);
+        --cp-highlight: rgba(177, 31, 75, 0.12);
+      }
+      html[data-theme="dark"] {
+        color-scheme: dark;
+        --cp-bg: #3d3b3a;
+        --cp-bg-elevated: #343231;
+        --cp-surface: #292929;
+        --cp-surface-soft: #2e2e2e;
+        --cp-border: #474747;
+        --cp-border-strong: #5f5f5f;
+        --cp-text: #dedede;
+        --cp-text-muted: #919191;
+        --cp-text-soft: #b0b0b0;
+        --cp-accent: #fd8ea1;
+        --cp-accent-hover: #fb7b91;
+        --cp-accent-soft: rgba(253, 142, 161, 0.14);
+        --cp-accent-fg: #1a1a1a;
+        --cp-success: #4ade80;
+        --cp-danger: #f87171;
+        --cp-warning: #fbbf24;
+        --cp-link: #4da6ff;
+        --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+        --cp-highlight: rgba(253, 142, 161, 0.12);
+      }
+
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; }
+      body {
+        font-family: "Segoe UI", Aptos, Calibri, -apple-system, BlinkMacSystemFont, sans-serif;
+        background: var(--cp-bg);
+        color: var(--cp-text);
+        line-height: 1.55;
+        min-height: 100vh;
+      }
+      code, .mono { font-family: Consolas, "Courier New", Courier, monospace; font-size: 0.92em; }
+      code { background: var(--cp-surface-soft); padding: 0.1em 0.35em; border-radius: 4px; border: 1px solid var(--cp-border); }
+      a { color: var(--cp-link); }
+
+      header.top {
+        background: var(--cp-bg-elevated);
+        border-bottom: 1px solid var(--cp-border);
+        padding: 14px 28px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        position: sticky;
+        top: 0;
+        z-index: 50;
+      }
+      header.top .title { font-weight: 600; font-size: 1.05rem; }
+      header.top .title .accent { color: var(--cp-accent); }
+      header.top .meta { display: flex; gap: 14px; align-items: center; font-size: 0.9rem; color: var(--cp-text-muted); }
+
+      .icon-btn {
+        background: transparent;
+        border: 1px solid var(--cp-border);
+        color: var(--cp-text);
+        border-radius: 0.625rem;
+        padding: 6px 10px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        font-family: inherit;
+      }
+      .icon-btn:hover { border-color: var(--cp-border-strong); }
+
+      /* Mode toggle */
+      .seg {
+        display: inline-flex;
+        border: 1px solid var(--cp-border);
+        border-radius: 999px;
+        overflow: hidden;
+        background: var(--cp-surface);
+      }
+      .seg button {
+        background: transparent;
+        border: 0;
+        padding: 6px 16px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        color: var(--cp-text-muted);
+        font-family: inherit;
+      }
+      .seg button.active { background: var(--cp-accent); color: var(--cp-accent-fg); }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 290px 1fr;
+        gap: 0;
+        max-width: 1280px;
+        margin: 0 auto;
+        align-items: start;
+      }
+      @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+
+      nav.side {
+        position: sticky;
+        top: 64px;
+        align-self: start;
+        max-height: calc(100vh - 64px);
+        overflow-y: auto;
+        padding: 20px 14px 40px 20px;
+        border-right: 1px solid var(--cp-border);
+      }
+      @media (max-width: 900px) {
+        nav.side { position: static; max-height: none; border-right: none; border-bottom: 1px solid var(--cp-border); }
+      }
+      nav.side h2 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--cp-text-soft); margin: 0 0 10px; }
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        text-align: left;
+        background: transparent;
+        border: 1px solid transparent;
+        border-radius: 0.625rem;
+        padding: 9px 10px;
+        cursor: pointer;
+        color: var(--cp-text);
+        font-family: inherit;
+        font-size: 0.9rem;
+        margin-bottom: 2px;
+      }
+      .nav-item:hover { background: var(--cp-surface-soft); }
+      .nav-item.active { background: var(--cp-accent-soft); border-color: var(--cp-accent); color: var(--cp-accent); font-weight: 600; }
+      .nav-item .tag {
+        flex: 0 0 auto;
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: var(--cp-text-soft);
+        font-family: Consolas, monospace;
+      }
+      .nav-item.active .tag { color: var(--cp-accent); }
+      .nav-item .label { flex: 1; }
+      .nav-item .mini {
+        flex: 0 0 auto;
+        font-size: 0.68rem;
+        color: var(--cp-text-soft);
+        font-variant-numeric: tabular-nums;
+      }
+
+      main { padding: 28px; }
+
+      .card {
+        background: var(--cp-surface);
+        border: 1px solid var(--cp-border);
+        border-radius: 16px;
+        box-shadow: 0 0 2px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.14);
+        padding: 26px;
+        margin-bottom: 20px;
+      }
+      h1 { font-size: 1.6rem; margin: 0 0 8px; }
+      h2 { font-size: 1.2rem; margin: 0 0 12px; }
+      h3 { font-size: 1.02rem; margin: 22px 0 10px; }
+      p.lead { color: var(--cp-text-muted); margin-top: 0; }
+      hr.sep { border: 0; border-top: 1px solid var(--cp-border); margin: 18px 0; }
+
+      .pill {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: var(--cp-surface-soft);
+        border: 1px solid var(--cp-border);
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: var(--cp-text-muted);
+        white-space: nowrap;
+      }
+      .pill.l200 { background: rgba(22, 163, 74, 0.10); color: var(--cp-success); border-color: rgba(22, 163, 74, 0.32); }
+      .pill.l300 { background: rgba(245, 158, 11, 0.12); color: var(--cp-warning); border-color: rgba(245, 158, 11, 0.32); }
+      .pill.l400 { background: rgba(220, 38, 38, 0.10); color: var(--cp-danger); border-color: rgba(220, 38, 38, 0.32); }
+      .pill.mod { background: var(--cp-accent-soft); color: var(--cp-accent); border-color: var(--cp-accent); font-family: Consolas, monospace; }
+
+      .toolbar {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+        margin: 6px 0 4px;
+      }
+      .toolbar .spacer { flex: 1; }
+      .chip {
+        font-size: 0.8rem;
+        padding: 5px 11px;
+        border-radius: 999px;
+        border: 1px solid var(--cp-border);
+        background: var(--cp-surface);
+        color: var(--cp-text-muted);
+        cursor: pointer;
+        font-family: inherit;
+        font-weight: 600;
+      }
+      .chip.active { background: var(--cp-accent); color: var(--cp-accent-fg); border-color: var(--cp-accent); }
+
+      .q {
+        border: 1px solid var(--cp-border);
+        border-left: 4px solid var(--cp-border);
+        border-radius: 10px;
+        padding: 14px 16px;
+        margin-bottom: 12px;
+        background: var(--cp-surface);
+      }
+      .q.rate-confident { border-left-color: var(--cp-success); }
+      .q.rate-fuzzy { border-left-color: var(--cp-warning); }
+      .q.rate-none { border-left-color: var(--cp-danger); }
+      .q-head { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+      .q-num { font-size: 0.78rem; font-weight: 700; color: var(--cp-text-soft); font-variant-numeric: tabular-nums; }
+      .q-stem { font-size: 1rem; margin: 2px 0 12px; }
+      .q-stem code { font-size: 0.88em; }
+
+      .rate-row { display: flex; gap: 8px; flex-wrap: wrap; }
+      .rate-btn {
+        font-size: 0.8rem;
+        font-weight: 600;
+        padding: 6px 12px;
+        border-radius: 0.5rem;
+        border: 1px solid var(--cp-border);
+        background: var(--cp-surface);
+        color: var(--cp-text-muted);
+        cursor: pointer;
+        font-family: inherit;
+      }
+      .rate-btn:hover { border-color: var(--cp-border-strong); }
+      .rate-btn.sel-confident { background: rgba(22,163,74,0.12); border-color: var(--cp-success); color: var(--cp-success); }
+      .rate-btn.sel-fuzzy { background: rgba(245,158,11,0.14); border-color: var(--cp-warning); color: var(--cp-warning); }
+      .rate-btn.sel-none { background: rgba(220,38,38,0.10); border-color: var(--cp-danger); color: var(--cp-danger); }
+
+      /* progress summary */
+      .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+      @media (max-width: 700px) { .summary-grid { grid-template-columns: repeat(2, 1fr); } }
+      .stat {
+        border: 1px solid var(--cp-border);
+        border-radius: 12px;
+        padding: 14px;
+        text-align: center;
+        background: var(--cp-surface-soft);
+      }
+      .stat .big { font-size: 1.7rem; font-weight: 700; line-height: 1.1; }
+      .stat .cap { font-size: 0.78rem; color: var(--cp-text-muted); margin-top: 2px; }
+      .stat.confident .big { color: var(--cp-success); }
+      .stat.fuzzy .big { color: var(--cp-warning); }
+      .stat.none .big { color: var(--cp-danger); }
+
+      .bar {
+        height: 12px;
+        background: var(--cp-surface-soft);
+        border-radius: 999px;
+        overflow: hidden;
+        display: flex;
+        margin: 14px 0 4px;
+        border: 1px solid var(--cp-border);
+      }
+      .bar > span { display: block; height: 100%; }
+      .bar .seg-confident { background: var(--cp-success); }
+      .bar .seg-fuzzy { background: var(--cp-warning); }
+      .bar .seg-none { background: var(--cp-danger); }
+
+      .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 0.8rem; color: var(--cp-text-muted); margin-top: 4px; }
+      .legend .sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; vertical-align: middle; margin-right: 6px; }
+      .legend .sw.c { background: var(--cp-success); }
+      .legend .sw.f { background: var(--cp-warning); }
+      .legend .sw.n { background: var(--cp-danger); }
+
+      .btn {
+        background: var(--cp-accent);
+        color: var(--cp-accent-fg);
+        border: 1px solid var(--cp-accent);
+        border-radius: 0.625rem;
+        padding: 9px 16px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+      }
+      .btn:hover { background: var(--cp-accent-hover); border-color: var(--cp-accent-hover); }
+      .btn.ghost { background: transparent; border: 1px solid var(--cp-border); color: var(--cp-text); }
+      .btn.ghost:hover { background: var(--cp-surface-soft); }
+
+      .module-meta { font-size: 0.88rem; color: var(--cp-text-muted); margin: 0 0 4px; }
+      .topic-block { margin-bottom: 6px; }
+      .topic-block > h3 { display: flex; align-items: center; gap: 10px; }
+      .hidden { display: none !important; }
+      .empty { color: var(--cp-text-soft); font-style: italic; padding: 8px 0; }
+    </style>
+  </head>
+  <body>
+    <header class="top">
+      <div class="title"><span class="accent">AKS</span> &amp; Containers — Knowledge Checks</div>
+      <div class="meta">
+        <div class="seg" id="mode-seg">
+          <button data-mode="topic" class="active">By topic</button>
+          <button data-mode="module">By module</button>
+        </div>
+        <button class="icon-btn" id="theme-toggle" title="Toggle theme">🌓</button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <nav class="side">
+        <h2 id="nav-heading">Topics</h2>
+        <div id="nav-list"></div>
+        <hr class="sep" />
+        <button class="nav-item" id="nav-overview"><span class="tag">▤</span><span class="label">Progress overview</span></button>
+      </nav>
+
+      <main>
+        <div id="view-content"></div>
+      </main>
+    </div>
+
+    <script>
+      // ===================== DATA =====================
+      const MODULES = [
+        { id: "M00", name: "Envisioning & Architecture Decisions", time: "~45 min", level: "L300 · L400 stretch", path: "modules/00-envisioning/README.md" },
+        { id: "M01", name: "Platform Foundation", time: "module", level: "L300", path: "modules/01-platform-foundation/README.md" },
+        { id: "M02", name: "Cluster Hardening", time: "module", level: "L300 · L400 stretch", path: "modules/02-cluster-hardening/README.md" },
+        { id: "M03", name: "MVP Go-Live", time: "module", level: "L300", path: "modules/03-mvp-go-live/README.md" },
+        { id: "M04", name: "A/B Testing", time: "module", level: "L300 · L400 stretch", path: "modules/04-ab-testing/README.md" },
+        { id: "M05", name: "Deployment Rings", time: "module", level: "L300", path: "modules/05-deployment-rings/README.md" },
+        { id: "M06", name: "Intrinsic Outage", time: "module", level: "L300 · L400 stretch", path: "modules/06-intrinsic-outage/README.md" },
+        { id: "M07", name: "Extrinsic Outage", time: "module", level: "L300 · L400 stretch", path: "modules/07-extrinsic-outage/README.md" },
+        { id: "M08", name: "Optimization", time: "module", level: "L300 · L400 stretch", path: "modules/08-optimization/README.md" },
+      ];
+
+      // Questions verbatim from KNOWLEDGE-CHECKS.md. Each topic maps to the workshop
+      // modules where the material is taught/applied.
+      const TOPICS = [
+        {
+          id: 1, title: "Container fundamentals on Azure", modules: ["M00", "M01"],
+          questions: [
+            { level: 200, html: "What is the difference between a container image and a running container, and which of the two does an Azure Container Registry (ACR) repository store?" },
+            { level: 200, html: "Name the three main Azure compute services for running containers and the primary use case for each: ACR Tasks, Azure Container Instances (ACI), and Azure Kubernetes Service (AKS)." },
+            { level: 200, html: "What does <code>docker build</code> produce that a registry like ACR can store, and what is the difference between a tag and a digest?" },
+            { level: 300, html: "Why is multi-stage build in a Dockerfile considered a best practice for production images, and what concrete attack surface does it remove?" },
+            { level: 300, html: "What is the OCI image specification, and why does AKS not care whether your image was built with Docker, BuildKit, Buildah, or Kaniko?" },
+            { level: 300, html: "ACR offers Basic, Standard, and Premium tiers. Name three Premium-only capabilities relevant to enterprise workloads." },
+            { level: 400, html: "Compare ACR geo-replication with cross-region image import for a multi-region AKS deployment — which guarantees lower pull latency in a regional failover, and what is the tradeoff?" },
+            { level: 400, html: "Argue for or against allowing mutable tags in a production ACR. What are the operational and security consequences of each posture?" },
+          ],
+        },
+        {
+          id: 2, title: "AKS cluster design (Day-0 decisions)", modules: ["M00", "M01"],
+          questions: [
+            { level: 200, html: "What is the difference between AKS Automatic and AKS Standard in terms of which knobs you own?" },
+            { level: 200, html: "What does it mean for an AKS cluster's API server to be <em>private</em>, and what does that imply for <code>kubectl</code> from a workstation outside the VNet?" },
+            { level: 300, html: "Compare kubenet, Azure CNI, Azure CNI Overlay, and Azure CNI Powered by Cilium. Which is reversible after the cluster exists?" },
+            { level: 300, html: "Why is the choice between system-assigned and user-assigned managed identity for the AKS control plane considered effectively a Day-0 decision?" },
+            { level: 300, html: "For a zone-redundant AKS cluster, what is the minimum number of Availability Zones required to survive a single-zone outage and still meet quorum-sensitive workloads like etcd-backed operators?" },
+            { level: 400, html: "A team wants the API server reachable only from a corporate network <em>and</em> from GitHub-hosted CI runners. Compare API server VNet integration, authorized IP ranges, and a self-hosted runner inside the VNet. Which combination would you recommend and why?" },
+            { level: 400, html: "You inherit a cluster with <code>enableRBAC = true</code> but <code>local accounts</code> still enabled and <code>aad</code> integration off. What is the threat model, and what is the migration sequence to Entra-integrated RBAC without an outage?" },
+            { level: 400, html: "Design a node pool layout for a workload mix of (a) latency-sensitive serving pods, (b) batch jobs that tolerate eviction, and (c) a single-instance stateful operator. Justify SKU family, zones, taints, and spot vs. on-demand for each." },
+          ],
+        },
+        {
+          id: 3, title: "Networking and ingress", modules: ["M01", "M03", "M04"],
+          questions: [
+            { level: 200, html: "What Kubernetes Service type provisions an Azure Load Balancer, and what does <code>externalTrafficPolicy: Local</code> change about source IP preservation?" },
+            { level: 200, html: "What is the default idle timeout of an Azure Load Balancer, and why does it matter for long-lived TCP connections?" },
+            { level: 300, html: "Compare Azure Application Gateway Ingress Controller (AGIC), the AKS managed NGINX ingress, and the Application Gateway for Containers (AGC). When would you pick each?" },
+            { level: 300, html: "What is the role of Azure Front Door in front of an AKS cluster, and at how many layers can TLS terminate on the path Front Door → Ingress → Pod?" },
+            { level: 300, html: "How does the Azure CNI Overlay data plane allocate Pod IPs, and why does this matter for VNet IP exhaustion in large clusters?" },
+            { level: 400, html: "A workload uses long-lived sockets and you observe sessions dropping at exactly 30 minutes. Walk through the diagnosis from the client back to AKS, naming the three most likely culprits in priority order." },
+            { level: 400, html: "Compare the AKS Istio add-on, Cilium service mesh mode, and Open Service Mesh deprecation for a regulated workload that requires mTLS between services. What is the long-term recommendation today?" },
+            { level: 400, html: "Design egress for a private AKS cluster that must reach Azure PaaS services, the public internet for package mirrors, and an on-prem REST API. Cover NAT Gateway, Azure Firewall, Private Endpoints, and user-defined routes." },
+          ],
+        },
+        {
+          id: 4, title: "Identity, RBAC, and secrets", modules: ["M01", "M02"],
+          questions: [
+            { level: 200, html: "Name the two Kubernetes-level RBAC primitives (<code>Role</code>/<code>RoleBinding</code>, <code>ClusterRole</code>/<code>ClusterRoleBinding</code>) and the scope of each." },
+            { level: 200, html: "What does Azure RBAC for Kubernetes Authorization give you that Kubernetes RBAC alone does not?" },
+            { level: 300, html: "Define AKS Workload Identity. How does it differ from the deprecated AAD Pod Identity, and why is it the recommended path today?" },
+            { level: 300, html: "A pod uses Workload Identity to read a Key Vault secret. Trace the chain of trust: pod → AKS OIDC issuer → Entra → user-assigned managed identity → Key Vault. Where is each link verified?" },
+            { level: 300, html: "What does a federated-credential subject look like for a Kubernetes ServiceAccount, and what symptom does a one-character typo produce at runtime?" },
+            { level: 400, html: "Compare the AKS Secrets Store CSI Driver with the Key Vault provider against simply using Workload Identity + the Azure SDK in code. What are the tradeoffs in rotation, blast radius, and observability?" },
+            { level: 400, html: "A team wants developers to have <code>kubectl exec</code> in dev but only <code>get/list</code> in prod, while CI has full write in both. Sketch the Azure RBAC + Kubernetes RBAC design." },
+            { level: 400, html: "Your organization disables local accounts on every AKS cluster (<code>local_account_disabled = true</code>). Which <code>az aks</code> command stops working, what replaces it, and how do you keep a break-glass account?" },
+          ],
+        },
+        {
+          id: 5, title: "GitOps and progressive delivery", modules: ["M03", "M04", "M05"],
+          questions: [
+            { level: 200, html: "Define GitOps in one sentence as it applies to Kubernetes." },
+            { level: 200, html: "What are the two AKS-native ways to install a GitOps controller (Argo CD or Flux) without doing it by hand?" },
+            { level: 300, html: "Compare Argo CD and Flux on multi-tenancy, secret handling, and the App-of-Apps vs. Kustomization tree patterns." },
+            { level: 300, html: "What is the failure mode if a GitOps controller loses Git reachability for an hour — does the workload stop?" },
+            { level: 300, html: "Why is \"manual sync to production, auto-sync everywhere else\" the most common posture in regulated environments?" },
+            { level: 400, html: "Compare blue/green, canary, and progressive rollouts implemented with (a) raw Deployments, (b) Argo Rollouts, and (c) Flagger over a service mesh. Which gives you automated metric-based abort and how?" },
+            { level: 400, html: "Design rollback for a GitOps stack: when does a UI-only rollback (Argo \"rollback to revision N\") drift from Git, and what is the right <em>post-incident</em> action?" },
+            { level: 400, html: "A platform team wants a single Git repo to drive 30 clusters across 4 regions and 3 rings (dev/canary/prod). Sketch the directory layout, the App-of-Apps structure, and the protection model." },
+          ],
+        },
+        {
+          id: 6, title: "Autoscaling and capacity", modules: ["M06", "M08"],
+          questions: [
+            { level: 200, html: "What is the difference between <code>resources.requests</code> and <code>resources.limits</code> on a container, and which one the scheduler reads?" },
+            { level: 200, html: "What is the Horizontal Pod Autoscaler (HPA), and what is the default metric it scales on?" },
+            { level: 300, html: "Define KEDA. Name three event sources KEDA can scale on that the stock HPA cannot." },
+            { level: 300, html: "Compare the AKS Cluster Autoscaler with Karpenter-style provisioners (Node Auto Provisioning preview). What does each optimize for?" },
+            { level: 300, html: "What is <code>terminationGracePeriodSeconds</code>, how does it interact with <code>preStop</code> hooks, and why does it matter for autoscaling-driven pod churn?" },
+            { level: 400, html: "A workload sees a burst from 0 → 5000 requests/sec in under 10 seconds. Walk through which signals KEDA reads, how the HPA reacts, when the Cluster Autoscaler kicks in, and where the latency cliff is." },
+            { level: 400, html: "Argue for or against running production pods on Azure Spot node pools. Which workload shapes are good candidates, which are not, and what failure-handling code do you need to write?" },
+            { level: 400, html: "A team's CPU requests are all set to 1000m and they are paying for 3× the capacity they use. Design a right-sizing program that touches VPA, observability, and change management — without dropping long-lived TCP sessions during the rollout." },
+          ],
+        },
+        {
+          id: 7, title: "Reliability, SLOs, and chaos", modules: ["M00", "M06"],
+          questions: [
+            { level: 200, html: "Define SLI, SLO, and SLA in one line each." },
+            { level: 200, html: "What does a <code>PodDisruptionBudget</code> (PDB) prevent, and what does it explicitly <em>not</em> prevent?" },
+            { level: 300, html: "What is the difference between voluntary and involuntary disruption in Kubernetes? Give one example of each." },
+            { level: 300, html: "A node fails. Walk through the sequence of events: kubelet heartbeat → node controller → pod eviction → reschedule. What are the default timers?" },
+            { level: 300, html: "What does Azure Chaos Studio give you on top of <code>kubectl drain</code> + manual cordon for AKS chaos engineering?" },
+            { level: 400, html: "Your SLO is 99.9% availability over 30 days. The error budget burns 50% in the first week. What is the standard SRE response, and what changes if it burns 50% in the first day?" },
+            { level: 400, html: "Compare zone-redundant single-region AKS, active-passive multi-region, and active-active multi-region for RTO, RPO, complexity, and cost. Where does each fit?" },
+            { level: 400, html: "Design a chaos experiment plan for a stateful workload behind sockets: pod kill, node drain, zone failure, regional failover. What is the success criterion for each, and what would invalidate the experiment?" },
+          ],
+        },
+        {
+          id: 8, title: "Observability", modules: ["M03", "M08"],
+          questions: [
+            { level: 200, html: "What are the three Kubernetes probe types (<code>liveness</code>, <code>readiness</code>, <code>startup</code>) and what does each gate?" },
+            { level: 200, html: "What does Container Insights collect from an AKS cluster, and where does it land?" },
+            { level: 300, html: "Compare Azure Monitor managed Prometheus + managed Grafana with self-hosted Prometheus + Grafana on AKS. Which surfaces are managed vs. yours to keep up?" },
+            { level: 300, html: "What is a recording rule vs. an alerting rule in Prometheus, and why do you want recording rules for SLO burn-rate alerts?" },
+            { level: 300, html: "How does OpenTelemetry on AKS differ from Application Insights' classic SDK approach, and what is the recommended migration path today?" },
+            { level: 400, html: "Design the three-pane war-room view for a production AKS incident: which metrics, which logs, which live commands. Justify each pane." },
+            { level: 400, html: "A pod is <code>Running</code> and <code>Ready</code> but the Argo Application is <code>Degraded</code>. What Kubernetes signals could be driving that, and which controller is making the call?" },
+            { level: 400, html: "You need to correlate a customer-facing request with a specific pod restart 4 hours ago. Sketch the data model: trace IDs in logs, kubelet event retention, Azure Monitor query joining <code>KubePodInventory</code> with <code>ContainerLog</code>." },
+          ],
+        },
+        {
+          id: 9, title: "Security and supply chain", modules: ["M02"],
+          questions: [
+            { level: 200, html: "What does an <code>ImagePullSecret</code> do, and why does an AKS-managed kubelet usually not need one for ACR?" },
+            { level: 200, html: "Name three Kubernetes resources that, by default, can be created cluster-wide without a namespace." },
+            { level: 300, html: "Define Pod Security Admission (PSA). Compare the <code>restricted</code>, <code>baseline</code>, and <code>privileged</code> profiles." },
+            { level: 300, html: "What is Microsoft Defender for Containers, and which of these does it cover: image scanning in ACR, runtime threat detection in AKS, Kubernetes API audit anomaly detection?" },
+            { level: 300, html: "What is the difference between an admission controller, a validating webhook, and a mutating webhook? Give a real example of each in an AKS context." },
+            { level: 400, html: "Design an image promotion pipeline that signs images at build with Notation, attaches an SBOM, scans for CVEs, and refuses to deploy unsigned or vulnerable images at the cluster. Name the Azure-native components at each step." },
+            { level: 400, html: "Compare network policy enforcement options on AKS: Azure Network Policy, Calico, and Cilium. Which would you pick for a workload that needs L7 (HTTP/gRPC) policy, and what is the cost?" },
+            { level: 400, html: "A pod is compromised. Walk through containment: how do you isolate it without losing forensics, what audit trails exist in AKS by default, and what does Defender for Containers add?" },
+          ],
+        },
+        {
+          id: 10, title: "Cost and FinOps", modules: ["M08"],
+          questions: [
+            { level: 200, html: "What are the three Azure-side cost components of an AKS cluster (control plane, nodes, supporting infra), and which one is free on the Free tier?" },
+            { level: 200, html: "Why do over-set CPU requests cost more than over-set CPU limits in a typical AKS workload?" },
+            { level: 300, html: "Compare Reserved Instances, Savings Plans, and Spot for AKS node pools. Which combine and which do not?" },
+            { level: 300, html: "What is the AKS cost analysis add-on, and what dimensions of cost (namespace, label, workload) does it surface?" },
+            { level: 300, html: "A workload uses 5% of allocated CPU and 90% of allocated memory. What is the right Azure VM SKU family to consider, and why?" },
+            { level: 400, html: "Build the business case for moving 30% of a batch workload to spot pools. What data do you need from observability, what code changes do you need to handle eviction, and what is the realistic ballpark saving?" },
+            { level: 400, html: "A platform team wants per-team chargeback on a shared AKS cluster. Compare label-based showback via the cost add-on, dedicated node pools per team, and dedicated namespaces with resource quotas. What is the operational cost of each?" },
+            { level: 400, html: "Argue for or against scale-to-zero for a low-traffic internal API on AKS. Cover KEDA, cold-start, the cost of the underlying node pool, and the alternative of Azure Container Apps." },
+          ],
+        },
+        {
+          id: 11, title: "Storage and stateful workloads", modules: ["M01", "M07"],
+          questions: [
+            { level: 200, html: "What is the difference between a <code>PersistentVolume</code> and a <code>PersistentVolumeClaim</code> in Kubernetes?" },
+            { level: 200, html: "Name three Azure-native CSI drivers available on AKS and the storage backend each maps to." },
+            { level: 300, html: "Compare Azure Disk CSI (<code>disk.csi.azure.com</code>) with Azure Files CSI (<code>file.csi.azure.com</code>) on access modes (<code>RWO</code> vs. <code>RWX</code>), performance, and failure domain." },
+            { level: 300, html: "What is a <code>StatefulSet</code>, and what does it guarantee about pod identity and storage that a <code>Deployment</code> does not?" },
+            { level: 300, html: "Why is Azure Disk a poor fit for a workload that needs to fail a pod over to a node in a different Availability Zone, and what are the two ways to solve it?" },
+            { level: 400, html: "Design storage for a database workload that needs (a) durable per-pod storage, (b) snapshotting for backup, and (c) survives single-zone failure. Compare Azure Disk ZRS, Azure NetApp Files, and the Premium SSD v2 + manual replication options." },
+            { level: 400, html: "A <code>StatefulSet</code> is stuck because a <code>PersistentVolumeClaim</code> cannot bind in a new zone after a node failure. Walk through the diagnosis and the recovery steps." },
+            { level: 400, html: "Argue for or against running a production OLTP database on AKS vs. on Azure Database for PostgreSQL Flexible Server. Cover operational burden, performance tuning, HA, and patch cadence." },
+          ],
+        },
+        {
+          id: 12, title: "Disaster recovery and multi-region", modules: ["M07"],
+          questions: [
+            { level: 200, html: "Define RTO and RPO in one sentence each." },
+            { level: 200, html: "What is the difference between a backup and a snapshot, and which one is sufficient for accidental-delete recovery vs. region-loss recovery?" },
+            { level: 300, html: "Compare DNS-based failover (Azure Front Door, Traffic Manager) with anycast IPs (Cross-Region Load Balancer) for AKS regional failover. What bounds RTO in each?" },
+            { level: 300, html: "What is the difference between geo-redundant storage (GRS) and zone-redundant storage (ZRS) for AKS-attached disks and backups?" },
+            { level: 300, html: "How does Velero (or Kasten K10) on AKS interact with the Azure CSI snapshotter, and why is application-consistent backup harder than crash-consistent?" },
+            { level: 400, html: "Design failover for a workload composed of stateless AKS pods, an Azure Database for PostgreSQL Flexible Server, and an Azure Cache for Redis. Specify the steps in order and call out what is not reversible." },
+            { level: 400, html: "Your RTO budget is 5 minutes for region failover, but you observe P99 latency stays elevated for 15 minutes after recovery. Where does the gap come from and how do you close it?" },
+            { level: 400, html: "Argue for or against active-active across two Azure regions for a workload that does not require it for SLO. What new failure modes do you introduce?" },
+          ],
+        },
+        {
+          id: 13, title: "Day-2 operations", modules: ["M05", "M08"],
+          questions: [
+            { level: 200, html: "What does a Kubernetes minor version upgrade on AKS upgrade, and what does it <em>not</em> touch?" },
+            { level: 200, html: "What is the supported version skew between <code>kubectl</code> client and the AKS API server?" },
+            { level: 300, html: "Compare auto-upgrade channels for AKS (<code>none</code>, <code>patch</code>, <code>stable</code>, <code>rapid</code>, <code>node-image</code>). Which is appropriate for production, and what guardrails do you want around it?" },
+            { level: 300, html: "What is the AKS <em>maintenance window</em> feature, and what is the typical pattern for combining it with auto-upgrade channels?" },
+            { level: 300, html: "How do node-image upgrades differ from control-plane upgrades, and which one drains nodes?" },
+            { level: 400, html: "Design a cluster upgrade runbook that covers PDB review, surge nodes, blast-radius testing, and rollback. What is your stop-the-line criterion?" },
+            { level: 400, html: "A <code>kubectl drain</code> is stuck because a pod has a misconfigured PDB. Walk through the safe recovery options, ordered from least to most disruptive." },
+            { level: 400, html: "Two teams share a cluster. One team's image-pull surge is starving the other team's pods of node bandwidth. Cover the technical fixes (registry caching, pre-pull DaemonSet, network policy) and the organizational fix (separate node pools, quotas, policy)." },
+          ],
+        },
+        {
+          id: 14, title: "Containers beyond AKS", modules: ["M00", "M08"],
+          questions: [
+            { level: 200, html: "What is Azure Container Apps (ACA), and how is it different from AKS at the user-facing level?" },
+            { level: 200, html: "What is Azure Container Instances (ACI), and what is the canonical use case (one-shot jobs, dev/test, burst, GitHub Actions runners)?" },
+            { level: 300, html: "Compare ACA and AKS on: scale-to-zero, custom CRDs, sidecar control, networking integration with private VNets, and operational burden." },
+            { level: 300, html: "What is the AKS virtual nodes add-on (ACI-backed), and what production limitations does it carry?" },
+            { level: 300, html: "When does Azure App Service for Containers beat both ACA and AKS for a single-image web workload?" },
+            { level: 400, html: "Design a decision tree: for a new internal API, when should you pick App Service for Containers vs. ACA vs. AKS vs. ACI? Justify with concrete signals (team size, scale, customization, multi-tenancy)." },
+            { level: 400, html: "Compare the security model: ACA uses managed identities and Dapr, AKS uses Workload Identity and a service mesh. For a workload that calls 10 Azure services and 3 internal services, which gives you less code to write and why?" },
+            { level: 400, html: "A team built an MVP on ACA and now wants to move to AKS for sidecar control. Sketch the migration: image, manifests, ingress, identity, secrets. Where are the gotchas?" },
+          ],
+        },
+      ];
+
+      // ===================== STATE =====================
+      const STORAGE_KEY = "aks-kc-ratings-v1";
+      let ratings = {};
+      try { ratings = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch (e) { ratings = {}; }
+
+      let mode = "topic";       // "topic" | "module"
+      let selectedId = TOPICS[0].id; // topic id or module id
+      let levelFilter = "all";   // "all" | 200 | 300 | 400
+
+      // Stable question id, independent of which view renders it.
+      function qid(topicId, idx) { return "t" + topicId + "q" + idx; }
+
+      function saveRatings() { localStorage.setItem(STORAGE_KEY, JSON.stringify(ratings)); }
+
+      function topicsForModule(modId) {
+        return TOPICS.filter((t) => t.modules.includes(modId));
+      }
+
+      function levelClass(l) { return "l" + l; }
+
+      function ratingClass(r) {
+        return r === "confident" ? "rate-confident" : r === "fuzzy" ? "rate-fuzzy" : r === "none" ? "rate-none" : "";
+      }
+
+      // Count ratings across a set of {topicId, idx} question refs
+      function tally(refs) {
+        const out = { total: refs.length, confident: 0, fuzzy: 0, none: 0, unrated: 0 };
+        refs.forEach((ref) => {
+          const r = ratings[qid(ref.topicId, ref.idx)];
+          if (r === "confident") out.confident++;
+          else if (r === "fuzzy") out.fuzzy++;
+          else if (r === "none") out.none++;
+          else out.unrated++;
+        });
+        return out;
+      }
+
+      function allRefs() {
+        const refs = [];
+        TOPICS.forEach((t) => t.questions.forEach((q, i) => refs.push({ topicId: t.id, idx: i })));
+        return refs;
+      }
+
+      function refsForTopic(t) { return t.questions.map((q, i) => ({ topicId: t.id, idx: i })); }
+
+      function refsForModule(modId) {
+        const refs = [];
+        topicsForModule(modId).forEach((t) => t.questions.forEach((q, i) => refs.push({ topicId: t.id, idx: i })));
+        return refs;
+      }
+
+      // ===================== RENDER: NAV =====================
+      function renderNav() {
+        const heading = document.getElementById("nav-heading");
+        const list = document.getElementById("nav-list");
+        list.innerHTML = "";
+        if (mode === "topic") {
+          heading.textContent = "Topics";
+          TOPICS.forEach((t) => {
+            const c = tally(refsForTopic(t));
+            list.appendChild(navItem("S" + t.id, t.title, c, t.id));
+          });
+        } else {
+          heading.textContent = "Modules";
+          MODULES.forEach((m) => {
+            const c = tally(refsForModule(m.id));
+            if (c.total === 0) return;
+            list.appendChild(navItem(m.id, m.name, c, m.id));
+          });
+        }
+      }
+
+      function navItem(tag, label, count, id) {
+        const btn = document.createElement("button");
+        btn.className = "nav-item" + (selectedId === id ? " active" : "");
+        const rated = count.total - count.unrated;
+        btn.innerHTML =
+          '<span class="tag">' + tag + "</span>" +
+          '<span class="label">' + label + "</span>" +
+          '<span class="mini">' + rated + "/" + count.total + "</span>";
+        btn.onclick = () => { selectedId = id; render(); };
+        return btn;
+      }
+
+      // ===================== RENDER: QUESTION =====================
+      function questionEl(topic, idx) {
+        const q = topic.questions[idx];
+        if (levelFilter !== "all" && q.level !== levelFilter) return null;
+        const id = qid(topic.id, idx);
+        const current = ratings[id];
+        const wrap = document.createElement("div");
+        wrap.className = "q " + ratingClass(current);
+        wrap.innerHTML =
+          '<div class="q-head">' +
+            '<span class="q-num">' + topic.id + "." + (idx + 1) + "</span>" +
+            '<span class="pill ' + levelClass(q.level) + '">L' + q.level + "</span>" +
+          "</div>" +
+          '<div class="q-stem">' + q.html + "</div>";
+        const row = document.createElement("div");
+        row.className = "rate-row";
+        [["confident", "Confident"], ["fuzzy", "Fuzzy"], ["none", "No idea"]].forEach(([val, label]) => {
+          const b = document.createElement("button");
+          b.className = "rate-btn" + (current === val ? " sel-" + val : "");
+          b.textContent = label;
+          b.onclick = () => {
+            if (ratings[id] === val) delete ratings[id]; else ratings[id] = val;
+            saveRatings();
+            render();
+          };
+          row.appendChild(b);
+        });
+        wrap.appendChild(row);
+        return wrap;
+      }
+
+      // ===================== RENDER: PROGRESS BAR =====================
+      function progressBlock(count) {
+        const pct = (n) => (count.total ? (n / count.total) * 100 : 0);
+        return (
+          '<div class="bar">' +
+            '<span class="seg-confident" style="width:' + pct(count.confident) + '%"></span>' +
+            '<span class="seg-fuzzy" style="width:' + pct(count.fuzzy) + '%"></span>' +
+            '<span class="seg-none" style="width:' + pct(count.none) + '%"></span>' +
+          "</div>" +
+          '<div class="legend">' +
+            "<span><span class=\"sw c\"></span>Confident " + count.confident + "</span>" +
+            "<span><span class=\"sw f\"></span>Fuzzy " + count.fuzzy + "</span>" +
+            "<span><span class=\"sw n\"></span>No idea " + count.none + "</span>" +
+            "<span>Unrated " + count.unrated + "</span>" +
+          "</div>"
+        );
+      }
+
+      function levelFilterBar() {
+        const bar = document.createElement("div");
+        bar.className = "toolbar";
+        const mk = (val, label) => {
+          const b = document.createElement("button");
+          b.className = "chip" + (levelFilter === val ? " active" : "");
+          b.textContent = label;
+          b.onclick = () => { levelFilter = val; render(); };
+          return b;
+        };
+        bar.appendChild(mk("all", "All levels"));
+        bar.appendChild(mk(200, "L200"));
+        bar.appendChild(mk(300, "L300"));
+        bar.appendChild(mk(400, "L400"));
+        return bar;
+      }
+
+      // ===================== RENDER: MAIN VIEWS =====================
+      function renderTopicView(topic) {
+        const root = document.getElementById("view-content");
+        root.innerHTML = "";
+
+        const head = document.createElement("div");
+        head.className = "card";
+        const modPills = topic.modules
+          .map((m) => '<span class="pill mod">' + m + "</span>")
+          .join(" ");
+        const count = tally(refsForTopic(topic));
+        head.innerHTML =
+          '<h1>Section ' + topic.id + " — " + topic.title + "</h1>" +
+          '<p class="lead">Taught / applied in: ' + modPills + "</p>" +
+          progressBlock(count);
+        root.appendChild(head);
+
+        const body = document.createElement("div");
+        body.className = "card";
+        body.appendChild(levelFilterBar());
+        let shown = 0;
+        topic.questions.forEach((q, i) => {
+          const el = questionEl(topic, i);
+          if (el) { body.appendChild(el); shown++; }
+        });
+        if (shown === 0) {
+          const e = document.createElement("div");
+          e.className = "empty";
+          e.textContent = "No questions at this level for this topic.";
+          body.appendChild(e);
+        }
+        root.appendChild(body);
+      }
+
+      function renderModuleView(modId) {
+        const mod = MODULES.find((m) => m.id === modId);
+        const root = document.getElementById("view-content");
+        root.innerHTML = "";
+
+        const topics = topicsForModule(modId);
+        const count = tally(refsForModule(modId));
+
+        const head = document.createElement("div");
+        head.className = "card";
+        head.innerHTML =
+          '<h1>' + mod.id + " — " + mod.name + "</h1>" +
+          '<p class="module-meta">' + mod.time + " · Level target: " + mod.level +
+          ' · <a href="' + mod.path + '">' + mod.path + "</a></p>" +
+          '<p class="lead">Knowledge-check topics that this module exercises. Ratings are shared with the By-topic view.</p>' +
+          progressBlock(count);
+        root.appendChild(head);
+
+        const body = document.createElement("div");
+        body.className = "card";
+        body.appendChild(levelFilterBar());
+
+        let shownAny = false;
+        topics.forEach((t) => {
+          const block = document.createElement("div");
+          block.className = "topic-block";
+          const h = document.createElement("h3");
+          h.innerHTML = '<span class="pill">Section ' + t.id + "</span> " + t.title;
+          block.appendChild(h);
+          let shown = 0;
+          t.questions.forEach((q, i) => {
+            const el = questionEl(t, i);
+            if (el) { block.appendChild(el); shown++; }
+          });
+          if (shown > 0) { body.appendChild(block); shownAny = true; }
+        });
+        if (!shownAny) {
+          const e = document.createElement("div");
+          e.className = "empty";
+          e.textContent = "No questions at this level for this module.";
+          body.appendChild(e);
+        }
+        root.appendChild(body);
+      }
+
+      function renderOverview() {
+        const root = document.getElementById("view-content");
+        root.innerHTML = "";
+        const total = tally(allRefs());
+
+        const head = document.createElement("div");
+        head.className = "card";
+        head.innerHTML =
+          "<h1>Progress overview</h1>" +
+          '<p class="lead">Self-assessment across the full item bank — ' + total.total +
+          " items spanning 14 topics and 9 modules. Ratings are saved in your browser.</p>" +
+          '<div class="summary-grid">' +
+            '<div class="stat"><div class="big">' + total.total + '</div><div class="cap">Total items</div></div>' +
+            '<div class="stat confident"><div class="big">' + total.confident + '</div><div class="cap">Confident</div></div>' +
+            '<div class="stat fuzzy"><div class="big">' + total.fuzzy + '</div><div class="cap">Fuzzy</div></div>' +
+            '<div class="stat none"><div class="big">' + total.none + '</div><div class="cap">No idea</div></div>' +
+          "</div>" +
+          progressBlock(total);
+        const reset = document.createElement("div");
+        reset.style.marginTop = "16px";
+        const rb = document.createElement("button");
+        rb.className = "btn ghost";
+        rb.textContent = "Reset all ratings";
+        rb.onclick = () => {
+          if (confirm("Clear all self-assessment ratings? This cannot be undone.")) {
+            ratings = {}; saveRatings(); render();
+          }
+        };
+        reset.appendChild(rb);
+        head.appendChild(reset);
+        root.appendChild(head);
+
+        // by topic
+        const byTopic = document.createElement("div");
+        byTopic.className = "card";
+        byTopic.innerHTML = "<h2>By topic</h2>";
+        TOPICS.forEach((t) => {
+          const c = tally(refsForTopic(t));
+          const row = document.createElement("div");
+          row.style.margin = "14px 0";
+          row.innerHTML =
+            '<div style="display:flex;justify-content:space-between;gap:10px;font-size:0.92rem;">' +
+              "<strong>S" + t.id + " · " + t.title + "</strong>" +
+              '<span style="color:var(--cp-text-muted)">' + (c.total - c.unrated) + "/" + c.total + " rated</span>" +
+            "</div>" + progressBlock(c);
+          byTopic.appendChild(row);
+        });
+        root.appendChild(byTopic);
+
+        // by module
+        const byMod = document.createElement("div");
+        byMod.className = "card";
+        byMod.innerHTML = "<h2>By module</h2>";
+        MODULES.forEach((m) => {
+          const c = tally(refsForModule(m.id));
+          if (c.total === 0) return;
+          const row = document.createElement("div");
+          row.style.margin = "14px 0";
+          row.innerHTML =
+            '<div style="display:flex;justify-content:space-between;gap:10px;font-size:0.92rem;">' +
+              "<strong>" + m.id + " · " + m.name + "</strong>" +
+              '<span style="color:var(--cp-text-muted)">' + (c.total - c.unrated) + "/" + c.total + " rated</span>" +
+            "</div>" + progressBlock(c);
+          byMod.appendChild(row);
+        });
+        root.appendChild(byMod);
+      }
+
+      // ===================== ROUTER =====================
+      let showOverview = false;
+      function render() {
+        renderNav();
+        document.querySelectorAll("#mode-seg button").forEach((b) =>
+          b.classList.toggle("active", b.dataset.mode === mode)
+        );
+        document.getElementById("nav-overview").classList.toggle("active", showOverview);
+        if (showOverview) { renderOverview(); return; }
+        if (mode === "topic") {
+          const t = TOPICS.find((x) => x.id === selectedId) || TOPICS[0];
+          selectedId = t.id;
+          renderTopicView(t);
+        } else {
+          let m = MODULES.find((x) => x.id === selectedId);
+          if (!m || topicsForModule(m.id).length === 0) m = MODULES[0];
+          selectedId = m.id;
+          renderModuleView(m.id);
+        }
+      }
+
+      // ===================== EVENTS =====================
+      document.querySelectorAll("#mode-seg button").forEach((b) =>
+        b.addEventListener("click", () => {
+          mode = b.dataset.mode;
+          showOverview = false;
+          selectedId = mode === "topic" ? TOPICS[0].id : MODULES[0].id;
+          render();
+        })
+      );
+      document.getElementById("nav-overview").addEventListener("click", () => {
+        showOverview = true;
+        render();
+      });
+      // Switching a nav item turns off overview
+      document.getElementById("nav-list").addEventListener("click", () => { showOverview = false; });
+
+      document.getElementById("theme-toggle").addEventListener("click", () => {
+        const cur = document.documentElement.getAttribute("data-theme");
+        document.documentElement.setAttribute("data-theme", cur === "dark" ? "light" : "dark");
+      });
+
+      render();
+    </script>
+  </body>
+</html>
