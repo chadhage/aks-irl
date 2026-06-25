@@ -26,7 +26,7 @@ const MODULES = [
     time: "~45 min",
     group: "build",
     accent: "#38bdf8",
-    desc: "Reach the private API server, federate a User-Assigned Managed Identity per workload to its ServiceAccount, and connect to PostgreSQL with zero shared passwords. The biggest security win of the move.",
+    desc: "Reach the private API server, federate a User-Assigned Managed Identity per workload to its ServiceAccount, and connect to PostgreSQL with no shared passwords.",
     tags: ["Workload Identity", "Key Vault CSI", "Istio"],
     level: "L300",
   },

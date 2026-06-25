@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lab Guide — Replatforming Airline Messaging to AKS</title>
+  <meta name="description" content="Step-by-step lab: 45 activities across 6 phases, for self-paced or instructor-led delivery, with progress tracking." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="lab-body">
+  <a class="skip-link" href="#lab-main">Skip to content</a>
+
+  <header class="site-header">
+    <nav class="nav" aria-label="Primary">
+      <a class="brand" href="index.html">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" width="28" height="28" fill="none">
+            <path d="M16 2 4 9v14l12 7 12-7V9L16 2Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+            <path d="M16 9.5 9.5 13v6L16 22.5 22.5 19v-6L16 9.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span class="brand-text">Skybridge&nbsp;→&nbsp;AKS</span>
+      </a>
+      <button class="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html#scenario">Scenario</a></li>
+        <li><a href="index.html#architecture">Architecture</a></li>
+        <li><a href="lab.html" aria-current="page">Lab</a></li>
+        <li><a href="knowledge-check.html">Knowledge Check</a></li>
+        <li><a href="exam-prep.html">Exam Prep</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="lab-main" class="lab-layout">
+    <!-- Sidebar -->
+    <aside class="lab-sidebar" id="lab-sidebar" aria-label="Lab navigation">
+      <div class="lab-mode">
+        <span class="lab-mode-label">Mode</span>
+        <div class="seg-toggle" role="tablist" aria-label="Delivery mode">
+          <button class="seg-btn is-active" data-mode="self" role="tab" aria-selected="true">Self-paced</button>
+          <button class="seg-btn" data-mode="instructor" role="tab" aria-selected="false">Instructor-led</button>
+        </div>
+      </div>
+
+      <div class="lab-progress">
+        <div class="lab-progress-top">
+          <span id="progress-label">0 / 0 done</span>
+          <button id="reset-progress" class="link-btn" title="Clear saved progress">Reset</button>
+        </div>
+        <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+      </div>
+
+      <nav class="lab-toc" id="lab-toc" aria-label="Phases"></nav>
+
+      <p class="lab-hint">Progress is saved in this browser only. Self-paced times assume the trainer has already framed the module — working solo, double them.</p>
+    </aside>
+
+    <!-- Content -->
+    <div class="lab-content">
+      <header class="lab-head">
+        <p class="kicker">Participant activity guide</p>
+        <h1>Lab — follow each activity step by step</h1>
+        <p class="lab-intro">
+          The replatform, sliced into 10–20 minute activities across six phases. Each activity has a
+          <strong>pre-check</strong> (baseline what you know), the <strong>steps</strong> to run, a
+          <strong>validation</strong> gate, and a <strong>post-check</strong> (prove the lift landed).
+          Switch to <strong>Instructor-led</strong> for trainer talk tracks and demo cues.
+        </p>
+        <div class="lab-legend" id="instructor-banner" hidden>
+          Instructor-led view: trainer talk tracks and demo cues are shown at the start of each module group.
+        </div>
+      </header>
+
+      <div id="phases"></div>
+
+      <section class="lab-footer-cta">
+        <h2>Finished the lab?</h2>
+        <p>Pressure-test your recall and design judgement before the readout.</p>
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="knowledge-check.html">Knowledge Check</a>
+          <a class="btn btn-ghost" href="exam-prep.html">Exam Prep</a>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <button class="to-top" id="to-top" aria-label="Back to top">↑</button>
+
+  <script src="lab-data.js"></script>
+  <script src="lab.js"></script>
+</body>
+</html>

@@ -32,9 +32,10 @@
         <li><a href="#scenario">Scenario</a></li>
         <li><a href="#architecture">Architecture</a></li>
         <li><a href="#modules">Modules</a></li>
-        <li><a href="#slos">SLOs</a></li>
-        <li><a href="#delivery">Delivery</a></li>
-        <li><a class="nav-cta" href="https://github.com" target="_blank" rel="noopener">Repo ↗</a></li>
+        <li><a href="lab.html">Lab</a></li>
+        <li><a href="knowledge-check.html">Knowledge Check</a></li>
+        <li><a href="exam-prep.html">Exam Prep</a></li>
+        <li><a class="nav-cta" href="https://github.com/chadhage/aks-irl" target="_blank" rel="noopener">Repo ↗</a></li>
       </ul>
     </nav>
   </header>
@@ -47,13 +48,13 @@
         <p class="eyebrow">Microsoft WorkshopPlus · Instructor-led · L200 → L300 (L400 stretch)</p>
         <h1>Replatforming Real-Time Airline Messaging to <span class="grad">AKS</span></h1>
         <p class="lede">
-          A guided, hands-on workshop that moves a 20-year-old <strong>socket-based Type B / SITATEX messaging
-          platform</strong> — Java gateway, C/C++ parser, PostgreSQL on RHEL VMs — onto containers running on
-          Azure Kubernetes Service, tuned for the latency, throughput, and availability that airline messaging demands.
+          A hands-on workshop that moves a 20-year-old <strong>socket-based Type B / SITATEX messaging
+          platform</strong> — Java gateway, C/C++ parser, PostgreSQL on RHEL VMs — onto containers on
+          Azure Kubernetes Service, against the latency, throughput, and availability targets for airline messaging.
         </p>
         <div class="hero-cta">
-          <a class="btn btn-primary" href="#modules">Explore the 9 modules</a>
-          <a class="btn btn-ghost" href="#scenario">Read the scenario</a>
+          <a class="btn btn-primary" href="lab.html">Start the lab</a>
+          <a class="btn btn-ghost" href="#modules">View the 9 modules</a>
         </div>
         <dl class="hero-stats">
           <div><dt>2.4B</dt><dd>messages / month moved</dd></div>
@@ -68,7 +69,7 @@
     <section id="scenario" class="section">
       <div class="section-head">
         <span class="kicker">The brief</span>
-        <h2>One paragraph, then the whole workshop follows</h2>
+        <h2>The scenario in one paragraph</h2>
       </div>
       <div class="scenario-grid">
         <div class="scenario-copy">
@@ -82,7 +83,7 @@
           </p>
           <p>
             The board approved a 12-month modernization. <strong>This workshop builds the MVP</strong> — the first
-            vertical slice that proves the architecture on Azure against realistic load, good enough to onboard a real
+            vertical slice that proves the architecture on Azure against realistic load, sufficient to onboard one
             airline partner for a controlled pilot.
           </p>
         </div>
@@ -91,8 +92,8 @@
           <ul class="pain-list">
             <li><span>01</span> Patch fragility — 3 self-inflicted outages in 18 months</li>
             <li><span>02</span> Bi-modal capacity — ~$1.8M/yr of idle peak-sized compute</li>
-            <li><span>03</span> No safe A/B — parser changes shipped on a prayer</li>
-            <li><span>04</span> DR is theatre — 90+ min RTO, last drilled in 2022</li>
+            <li><span>03</span> No safe A/B — parser changes ship without a staged rollout</li>
+            <li><span>04</span> DR unproven — 90+ min RTO, last drilled in 2022</li>
             <li><span>05</span> Talent risk — 2 of 3 C/C++ maintainers retire in 2027</li>
           </ul>
         </aside>
@@ -180,12 +181,12 @@ flowchart LR
       <div class="moves">
         <h3>Design moves the workshop defends</h3>
         <div class="moves-grid">
-          <div class="move"><h4>Containerize first, refactor later</h4><p>The Java gateway and C++ parser ship in containers with no source rewrite — the customer wins autoscale, GitOps, and zone-survival without betting on a rewrite.</p></div>
-          <div class="move"><h4>Private API · CNI Overlay · 3 zones · Istio</h4><p>Connection-oriented workloads on a public API server are an unforced error. Overlay scales sockets without VNet exhaustion; Istio brings mTLS + ring-routing.</p></div>
-          <div class="move"><h4>StatefulSet gateway, sticky by socket</h4><p>Long-lived TCP behaves badly behind a rolling Deployment. Stable identities + sticky routing keep reconnect storms from happening on every push.</p></div>
-          <div class="move"><h4>Managed PostgreSQL, not in-cluster</h4><p>The DB is the crown jewel. Managed HA, PITR, and geo-replication with an Azure-owned SLA beat a self-managed StatefulSet for this workload.</p></div>
-          <div class="move"><h4>A/B by parser, not gateway</h4><p>The gateway holds socket state; the parser is stateless per message. We A/B <code>parser-cpp:v1</code> vs <code>v2</code> by Istio header match — sockets never move.</p></div>
-          <div class="move"><h4>Rings with a human gate</h4><p>dev → canary → prod, with canary soak and a required PR review plus a manual Argo sync before prod. Every change is traceable for the regulator.</p></div>
+          <div class="move"><h4>Containerize first, refactor later</h4><p>The Java gateway and C++ parser ship in containers with no source rewrite — gaining autoscale, GitOps, and zone-survival without a rewrite.</p></div>
+          <div class="move"><h4>Private API · CNI Overlay · 3 zones · Istio</h4><p>Connection-oriented workloads stay off a public API server. Overlay scales sockets without VNet exhaustion; Istio adds mTLS and ring-routing.</p></div>
+          <div class="move"><h4>StatefulSet gateway, sticky by socket</h4><p>Long-lived TCP behaves poorly behind a rolling Deployment. Stable identities and sticky routing avoid reconnect storms on every push.</p></div>
+          <div class="move"><h4>Managed PostgreSQL, not in-cluster</h4><p>State stays out of the cluster. Managed HA, PITR, and geo-replication with an Azure SLA fit this workload better than a self-managed StatefulSet.</p></div>
+          <div class="move"><h4>A/B by parser, not gateway</h4><p>The gateway holds socket state; the parser is stateless per message. A/B <code>parser-cpp:v1</code> vs <code>v2</code> by Istio header match — sockets never move.</p></div>
+          <div class="move"><h4>Rings with a human gate</h4><p>dev → canary → prod, with canary soak and a required PR review plus a manual Argo sync before prod. Every change is traceable.</p></div>
         </div>
       </div>
     </section>
@@ -194,7 +195,7 @@ flowchart LR
     <section id="modules" class="section">
       <div class="section-head">
         <span class="kicker">Hands-on</span>
-        <h2>Nine modules, one replatform story</h2>
+        <h2>Nine modules</h2>
         <p class="section-sub">Each module follows the same shape: outcomes → framing → talk track → participant steps → validation → L400 stretch.</p>
       </div>
       <div class="module-filter" role="tablist" aria-label="Filter modules">
@@ -273,11 +274,11 @@ flowchart LR
 
     <!-- CTA -->
     <section class="section cta-band">
-      <h2>Ready to run the cohort?</h2>
-      <p>Start with the trainer guide, send participants the prerequisites, and open the lab guide on the projector on day one.</p>
+      <h2>Run the cohort</h2>
+      <p>Start with the trainer guide, send participants the prerequisites, and open the lab guide on day one.</p>
       <div class="hero-cta">
-        <a class="btn btn-primary" href="https://github.com" target="_blank" rel="noopener">Open the repository ↗</a>
-        <a class="btn btn-ghost" href="#modules">Back to modules</a>
+        <a class="btn btn-primary" href="lab.html">Open the lab guide</a>
+        <a class="btn btn-ghost" href="https://github.com/chadhage/aks-irl" target="_blank" rel="noopener">Open the repository ↗</a>
       </div>
     </section>
   </main>
