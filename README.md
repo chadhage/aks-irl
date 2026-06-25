@@ -2,6 +2,8 @@
 
 > A **guided, instructor-led WorkshopPlus** delivered by a Microsoft SME (CSA / FastTrack Engineer / GBB). Participants are led, hands-on, through the **MVP replatform** of a legacy **SOCKET-based real-time airline messaging system** (Java + C/C++ on RHEL VMs with a PostgreSQL backend) onto **containers running on Azure Kubernetes Service**, tuned for the latency, throughput, and availability profile that airline messaging demands.
 
+> 🌐 **Microsite:** a static overview site lives in [`docs/`](docs/) and auto-deploys to **GitHub Pages** via [`.github/workflows/pages.yml`](.github/workflows/pages.yml). Enable it under **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+
 **Format.** Instructor + cohort (recommended 6–12 participants). Each participant on their own laptop with their own lab subscription / sandbox. The trainer drives the narrative, demos the hard parts on a shared screen, and unblocks individuals on Teams chat or breakouts.
 
 **Entry level:** L200 — participants have provisioned an AKS cluster at least once and used `kubectl`.

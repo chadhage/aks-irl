@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WorkshopPlus — Replatforming Airline Messaging to AKS</title>
+  <meta name="description" content="A guided, instructor-led WorkshopPlus that replatforms a legacy SOCKET-based real-time airline messaging system onto Azure Kubernetes Service." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header" id="top">
+    <nav class="nav" aria-label="Primary">
+      <a class="brand" href="#top">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" width="28" height="28" fill="none">
+            <path d="M16 2 4 9v14l12 7 12-7V9L16 2Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+            <path d="M16 9.5 9.5 13v6L16 22.5 22.5 19v-6L16 9.5Z" fill="currentColor" opacity=".18"/>
+            <path d="M16 9.5 9.5 13v6L16 22.5 22.5 19v-6L16 9.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span class="brand-text">Skybridge&nbsp;→&nbsp;AKS</span>
+      </a>
+      <button class="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="#scenario">Scenario</a></li>
+        <li><a href="#architecture">Architecture</a></li>
+        <li><a href="#modules">Modules</a></li>
+        <li><a href="#slos">SLOs</a></li>
+        <li><a href="#delivery">Delivery</a></li>
+        <li><a class="nav-cta" href="https://github.com" target="_blank" rel="noopener">Repo ↗</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="main">
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero-bg" aria-hidden="true"></div>
+      <div class="hero-inner">
+        <p class="eyebrow">Microsoft WorkshopPlus · Instructor-led · L200 → L300 (L400 stretch)</p>
+        <h1>Replatforming Real-Time Airline Messaging to <span class="grad">AKS</span></h1>
+        <p class="lede">
+          A guided, hands-on workshop that moves a 20-year-old <strong>socket-based Type B / SITATEX messaging
+          platform</strong> — Java gateway, C/C++ parser, PostgreSQL on RHEL VMs — onto containers running on
+          Azure Kubernetes Service, tuned for the latency, throughput, and availability that airline messaging demands.
+        </p>
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="#modules">Explore the 9 modules</a>
+          <a class="btn btn-ghost" href="#scenario">Read the scenario</a>
+        </div>
+        <dl class="hero-stats">
+          <div><dt>2.4B</dt><dd>messages / month moved</dd></div>
+          <div><dt>180k</dt><dd>concurrent client sockets</dd></div>
+          <div><dt>&lt;250 ms</dt><dd>P99 round-trip SLO</dd></div>
+          <div><dt>99.99%</dt><dd>global availability target</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <!-- SCENARIO -->
+    <section id="scenario" class="section">
+      <div class="section-head">
+        <span class="kicker">The brief</span>
+        <h2>One paragraph, then the whole workshop follows</h2>
+      </div>
+      <div class="scenario-grid">
+        <div class="scenario-copy">
+          <p>
+            <strong>Skybridge Messaging Services</strong> runs a real-time airline communications bus over
+            <strong>persistent TCP sockets</strong>: a Java <em>socket gateway</em> holding long-lived connections
+            to airline endpoints (DCS, baggage, flight ops, GDS), a <em>C/C++ message parser</em> that decodes the
+            wire format and applies routing rules, and a <em>PostgreSQL</em> store for routing tables, journals, and
+            end-of-day reconciliation. Today it runs on RHEL VMs, scaled vertically, patched in place, and failed
+            over by hand.
+          </p>
+          <p>
+            The board approved a 12-month modernization. <strong>This workshop builds the MVP</strong> — the first
+            vertical slice that proves the architecture on Azure against realistic load, good enough to onboard a real
+            airline partner for a controlled pilot.
+          </p>
+        </div>
+        <aside class="pain-card">
+          <h3>Pain the board signed off on</h3>
+          <ul class="pain-list">
+            <li><span>01</span> Patch fragility — 3 self-inflicted outages in 18 months</li>
+            <li><span>02</span> Bi-modal capacity — ~$1.8M/yr of idle peak-sized compute</li>
+            <li><span>03</span> No safe A/B — parser changes shipped on a prayer</li>
+            <li><span>04</span> DR is theatre — 90+ min RTO, last drilled in 2022</li>
+            <li><span>05</span> Talent risk — 2 of 3 C/C++ maintainers retire in 2027</li>
+          </ul>
+        </aside>
+      </div>
+
+      <div class="legacy-target">
+        <article class="lt-card legacy">
+          <header><span class="dot"></span> Legacy estate</header>
+          <ul>
+            <li>Java 8 / Netty 3 gateway · ~5k sockets/VM · 32 vCPU vertical scale</li>
+            <li>C/C++ Type B / EDIFACT parser · gcc 4.8 · shared-memory IPC</li>
+            <li>PostgreSQL 11 · streaming replication · ~15 min manual failover</li>
+            <li>RHEL 7/8 VMs · handcrafted HA pair per region</li>
+          </ul>
+        </article>
+        <div class="lt-arrow" aria-hidden="true">→</div>
+        <article class="lt-card target">
+          <header><span class="dot"></span> Target MVP on Azure</header>
+          <ul>
+            <li><code>gateway-java</code> · Java 21 / Netty · StatefulSet · sticky by socket</li>
+            <li><code>parser-cpp</code> · C++17 / gcc 13 · KEDA-scaled · A/B by version</li>
+            <li><code>ops-console</code> · React behind Front Door + WAF (only HTTP surface)</li>
+            <li>Azure DB for PostgreSQL Flexible Server · ZR HA · geo-replica</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <!-- ARCHITECTURE -->
+    <section id="architecture" class="section section-alt">
+      <div class="section-head">
+        <span class="kicker">End state</span>
+        <h2>Target architecture</h2>
+        <p class="section-sub">
+          Hub-spoke across two regions · private zone-redundant AKS · Istio mesh · GitOps rings · managed observability.
+        </p>
+      </div>
+      <div class="diagram-wrap">
+        <pre class="mermaid">
+flowchart LR
+  airline([Airline endpoints<br/>DCS / baggage / flight ops]):::ext
+  ops([Ops team<br/>browsers]):::ext
+  fd[Azure Front Door + WAF<br/>HTTP only — ops console]:::azure
+  nlb[Standard Load Balancer<br/>TCP 4561 / 4562]:::azure
+  subgraph hub[Hub VNet]
+    fw[Azure Firewall]
+    bastion[Bastion]
+  end
+  subgraph eastus2[Spoke · eastus2 — primary]
+    aks1[AKS Standard<br/>private API · CNI Overlay · 3 zones]:::aks
+    pg1[(PostgreSQL Flexible Server<br/>ZR HA)]:::data
+    acr[ACR zone-redundant]:::azure
+    kv1[Key Vault]:::azure
+  end
+  subgraph westus3[Spoke · westus3 — passive]
+    aks2[AKS Standard · 3 zones]:::aks
+    pg2[(Postgres replica)]:::data
+    kv2[Key Vault]:::azure
+  end
+  obs[Log Analytics + Managed Prometheus + Grafana]:::obs
+  airline -->|persistent TCP| nlb
+  ops --> fd
+  nlb -->|primary| aks1
+  nlb -.failover.-> aks2
+  fd --> aks1
+  fd -.failover.-> aks2
+  aks1 --- pg1
+  aks2 --- pg2
+  pg1 -.async replication.-> pg2
+  aks1 --> acr
+  aks2 --> acr
+  aks1 --> kv1
+  aks2 --> kv2
+  hub --- eastus2
+  hub --- westus3
+  aks1 -.metrics/logs.-> obs
+  aks2 -.metrics/logs.-> obs
+  classDef ext fill:#1f2937,stroke:#64748b,color:#e2e8f0;
+  classDef azure fill:#0b3b66,stroke:#38bdf8,color:#e0f2fe;
+  classDef aks fill:#0f3d2e,stroke:#34d399,color:#d1fae5;
+  classDef data fill:#3b2f0b,stroke:#fbbf24,color:#fef3c7;
+  classDef obs fill:#3a1d4d,stroke:#c084fc,color:#f3e8ff;
+        </pre>
+      </div>
+      <div class="moves">
+        <h3>Design moves the workshop defends</h3>
+        <div class="moves-grid">
+          <div class="move"><h4>Containerize first, refactor later</h4><p>The Java gateway and C++ parser ship in containers with no source rewrite — the customer wins autoscale, GitOps, and zone-survival without betting on a rewrite.</p></div>
+          <div class="move"><h4>Private API · CNI Overlay · 3 zones · Istio</h4><p>Connection-oriented workloads on a public API server are an unforced error. Overlay scales sockets without VNet exhaustion; Istio brings mTLS + ring-routing.</p></div>
+          <div class="move"><h4>StatefulSet gateway, sticky by socket</h4><p>Long-lived TCP behaves badly behind a rolling Deployment. Stable identities + sticky routing keep reconnect storms from happening on every push.</p></div>
+          <div class="move"><h4>Managed PostgreSQL, not in-cluster</h4><p>The DB is the crown jewel. Managed HA, PITR, and geo-replication with an Azure-owned SLA beat a self-managed StatefulSet for this workload.</p></div>
+          <div class="move"><h4>A/B by parser, not gateway</h4><p>The gateway holds socket state; the parser is stateless per message. We A/B <code>parser-cpp:v1</code> vs <code>v2</code> by Istio header match — sockets never move.</p></div>
+          <div class="move"><h4>Rings with a human gate</h4><p>dev → canary → prod, with canary soak and a required PR review plus a manual Argo sync before prod. Every change is traceable for the regulator.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MODULES -->
+    <section id="modules" class="section">
+      <div class="section-head">
+        <span class="kicker">Hands-on</span>
+        <h2>Nine modules, one replatform story</h2>
+        <p class="section-sub">Each module follows the same shape: outcomes → framing → talk track → participant steps → validation → L400 stretch.</p>
+      </div>
+      <div class="module-filter" role="tablist" aria-label="Filter modules">
+        <button class="chip is-active" data-filter="all">All</button>
+        <button class="chip" data-filter="build">Build</button>
+        <button class="chip" data-filter="release">Release</button>
+        <button class="chip" data-filter="resilience">Resilience</button>
+      </div>
+      <div class="modules-grid" id="modules-grid"><!-- populated by app.js --></div>
+    </section>
+
+    <!-- SLOs -->
+    <section id="slos" class="section section-alt">
+      <div class="section-head">
+        <span class="kicker">Graded against</span>
+        <h2>SLIs &amp; SLOs for a socket workload</h2>
+        <p class="section-sub">These aren't HTTP-API metrics. They drive the intrinsic and extrinsic outage modules and the L400 questions.</p>
+      </div>
+      <div class="table-wrap">
+        <table class="slo-table">
+          <thead>
+            <tr><th>SLI</th><th>Definition</th><th>SLO</th><th>Error budget (30d)</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Socket establishment success</td><td>% of TCP handshakes completing within 2 s</td><td><span class="pill">99.95%</span></td><td>21m 36s</td></tr>
+            <tr><td>Message round-trip latency</td><td>P99 of received-by-gateway → ack-from-parser</td><td><span class="pill">&lt;250 ms</span></td><td>latency SLO</td></tr>
+            <tr><td>Parser correctness</td><td>% of decoded messages where replay matches input</td><td><span class="pill">99.999%</span></td><td>correctness</td></tr>
+            <tr><td>Ops-console availability</td><td>% of <code>/ops/*</code> responses with status &lt; 500</td><td><span class="pill">99.9%</span></td><td>43m 12s</td></tr>
+            <tr><td>DR drill</td><td>Cross-region failover RTO during a quarterly drill</td><td><span class="pill">&lt;5 min</span></td><td>per-drill</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <blockquote class="success-quote">
+        “If we connect a single non-production airline partner to this MVP next Monday, it stays up for a full week of
+        day-of-operations traffic, we can ship a parser rule change to canary without a maintenance window, and a
+        planned zone failure doesn't make the on-call phone ring.”
+        <cite>— the customer's bar for success</cite>
+      </blockquote>
+    </section>
+
+    <!-- DELIVERY -->
+    <section id="delivery" class="section">
+      <div class="section-head">
+        <span class="kicker">Booking</span>
+        <h2>Three delivery shapes, one set of content</h2>
+      </div>
+      <div class="delivery-grid">
+        <article class="delivery-card">
+          <h3>WorkshopPlus 3-day</h3>
+          <p class="delivery-meta">3 consecutive days · 8 hr each · ~16 hr hands-on</p>
+          <p>Single team, intensive. Kick-off through cross-region failover and assessment in one tight block.</p>
+        </article>
+        <article class="delivery-card featured">
+          <span class="tag">Popular</span>
+          <h3>WorkshopPlus 5-day</h3>
+          <p class="delivery-meta">1 module / day · 4 hr each · ~16 hr hands-on</p>
+          <p>For operating teams that can't go offline a full day. One module per day keeps day jobs alive.</p>
+        </article>
+        <article class="delivery-card">
+          <h3>Briefing + Lab</h3>
+          <p class="delivery-meta">1-day briefing · self-paced lab · ~4 hr live + ~14 hr async</p>
+          <p>Awareness across a larger audience, with a self-paced lab to follow at each participant's pace.</p>
+        </article>
+      </div>
+
+      <div class="roles">
+        <h3>Roles in the room</h3>
+        <div class="roles-grid">
+          <div class="role"><h4>Lead trainer</h4><p>Microsoft SME (CSA / FTE / GBB). Drives the narrative, demos hard steps, owns the room.</p></div>
+          <div class="role"><h4>Co-trainer / TA</h4><p>Second SME. Unblocks individuals, monitors chat, runs the war-room view.</p></div>
+          <div class="role"><h4>Participant</h4><p>Customer engineer (≤12 per cohort). Owns their own lab subscription, executes every step.</p></div>
+          <div class="role"><h4>Customer sponsor</h4><p>Architecture / SRE lead. Joins the daily readout, validates the design maps to reality.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="section cta-band">
+      <h2>Ready to run the cohort?</h2>
+      <p>Start with the trainer guide, send participants the prerequisites, and open the lab guide on the projector on day one.</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="https://github.com" target="_blank" rel="noopener">Open the repository ↗</a>
+        <a class="btn btn-ghost" href="#modules">Back to modules</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <p class="footer-brand">Skybridge → AKS · WorkshopPlus</p>
+      <p class="footer-note">Instructor-led training content. Sample code &amp; infrastructure are not production-hardened beyond what each module covers. MIT licensed.</p>
+      <button id="theme-toggle" class="theme-toggle" aria-label="Toggle color theme">
+        <span class="theme-icon">◐</span> Theme
+      </button>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
