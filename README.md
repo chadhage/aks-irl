@@ -98,6 +98,7 @@ The **Trainer Guide** drives any of the three from the same content.
 ├── LAB-GUIDE.md                       # participant walkthrough (mirrors trainer agenda)
 ├── prerequisites.md                   # what each participant installs/provisions before day 1
 ├── modules/                           # one folder per module with the lab steps
+│   ├── appendix-a-intro-to-aks/       # L200 primer: containers → Kubernetes → AKS (prerequisite)
 │   ├── 00-envisioning/                # legacy assessment + Day-0 decisions + ADR
 │   ├── 01-platform-foundation/        # Terraform, OIDC, hub-spoke, AKS x2
 │   ├── 02-cluster-hardening/          # Workload Identity, Key Vault CSI, Istio, policy

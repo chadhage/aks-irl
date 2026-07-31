@@ -2,6 +2,10 @@
 
 > Complete every item below **before Day 1**. Allow ~60 minutes for the first pass. If a check fails, raise it with the trainer on the workshop chat at least 24 h before kick-off — some of these (quota, feature flags) can take hours to resolve.
 
+## 0. New to AKS? Read the L200 primer first
+
+The workshop runs at **L300**. If containers, Kubernetes, or Azure Kubernetes are new to you, work through [Appendix A — Intro to AKS](modules/appendix-a-intro-to-aks/README.md) first (~60 min, L200). It covers the *why / what / how* of each layer with three short hands-on labs and gets you fluent in the vocabulary Module 00 assumes.
+
 ## 1. Local tools (your laptop)
 
 Install these and confirm the versions:
