@@ -15,7 +15,7 @@ You will have, against **live socket traffic**:
 
 ## 2. Where this fits in the replatform story
 
-In the legacy stack, scenario A (Pod kill) is "a JVM crashes — the airline's sockets drop, the NOC scrambles". Scenario C (zone drain) doesn't even have an analog — the whole datacentre is single-AZ. This module proves that the new platform absorbs failures that the old one couldn't survive.
+In the legacy stack, scenario A (Pod kill) is "a JVM crashes — the client's sockets drop, the NOC scrambles". Scenario C (zone drain) doesn't even have an analog — the whole datacentre is single-AZ. This module proves that the new platform absorbs failures that the old one couldn't survive.
 
 ## 3. Level target
 

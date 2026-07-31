@@ -10,7 +10,7 @@ By the end you will have:
 
 - Built and pushed `gateway-java:v1`, `parser-cpp:v1`, `ops-console:v1` to your ACR
 - Bootstrapped Argo CD on the primary cluster and onboarded the messaging app-of-apps
-- A live TCP socket accepting Type B messages on the external NLB
+- A live TCP socket accepting framed messages on the external NLB
 - The ops console rendering live session telemetry from the gateway
 - Performed the first end-to-end smoke test (`scripts/smoke.sh tcp ... 4561 50`)
 
@@ -28,7 +28,7 @@ This is the **first time the new platform takes real traffic**. The legacy stack
 Three things that distinguish this MVP from a "first AKS deploy" tutorial:
 
 1. **No HTTP load balancer in the data path.** The gateway sits behind a TCP Standard Load Balancer with a 30-minute idle timeout. Front Door is only for the ops console — it would *break* socket affinity if it were in front of the gateway.
-2. **`gateway-java` is a StatefulSet.** Each Pod gets a stable identity and ordinal. The NLB uses source-IP affinity so airline endpoints land on the same Pod after a reconnect when possible.
+2. **`gateway-java` is a StatefulSet.** Each Pod gets a stable identity and ordinal. The NLB uses source-IP affinity so client endpoints land on the same Pod after a reconnect when possible.
 3. **PostgreSQL is *outside* the cluster.** Azure DB for PostgreSQL — Flexible Server, zone-redundant HA, Entra-auth. We do not run state in the cluster for an MVP this critical.
 
 ## 5. Demo cues *(trainer)*

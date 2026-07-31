@@ -28,7 +28,7 @@ Read [assessment/rubric.md](rubric.md) before you start — the rubric is open. 
 
 **C2.** A teammate proposes putting Front Door in front of the TCP socket port (4561). Refute or accept in two sentences.
 
-**C3.** A new airline cohort wants to test parser v2 only on their traffic. Write (in words or YAML) how you would route their traffic to v2 without affecting anyone else.
+**C3.** A new client cohort wants to test parser v2 only on their traffic. Write (in words or YAML) how you would route their traffic to v2 without affecting anyone else.
 
 ## D. GitOps, rings, rollback
 
@@ -40,7 +40,7 @@ Read [assessment/rubric.md](rubric.md) before you start — the rubric is open. 
 
 ## E. Outage & failover
 
-**E1.** A zone goes dark. List, in order, the three Kubernetes/Azure mechanisms that protect socket-connected airlines.
+**E1.** A zone goes dark. List, in order, the three Kubernetes/Azure mechanisms that protect socket-connected clients.
 
 **E2.** You executed a region failover. Sockets reconnected in 90 s but P99 RTT stayed elevated for 4 minutes after. Why?
 

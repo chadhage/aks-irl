@@ -1,6 +1,6 @@
-# WorkshopPlus — Replatforming Real-Time Airline Messaging to AKS
+# WorkshopPlus — Replatforming a Real-Time Messaging System to AKS
 
-> A **guided, instructor-led WorkshopPlus** delivered by a Microsoft SME (CSA / FastTrack Engineer / GBB). Participants are led, hands-on, through the **MVP replatform** of a legacy **SOCKET-based real-time airline messaging system** (Java + C/C++ on RHEL VMs with a PostgreSQL backend) onto **containers running on Azure Kubernetes Service**, tuned for the latency, throughput, and availability profile that airline messaging demands.
+> A **guided, instructor-led WorkshopPlus** delivered by a Microsoft SME (CSA / FastTrack Engineer / GBB). Participants are led, hands-on, through the **MVP replatform** of a legacy **socket-based real-time messaging system** (Java + C/C++ on RHEL VMs with a PostgreSQL backend) onto **containers running on Azure Kubernetes Service**, tuned for the latency, throughput, and availability profile that a real-time messaging platform demands.
 
 > 🌐 **Microsite:** a static overview site lives in [`docs/`](docs/) and auto-deploys to **GitHub Pages** via [`.github/workflows/pages.yml`](.github/workflows/pages.yml). Enable it under **Settings → Pages → Build and deployment → Source: GitHub Actions**.
 
@@ -13,7 +13,7 @@
 
 ## The scenario in one paragraph
 
-The customer (a real-time airline communications operator) runs a 20-year-old **Type B / EDIFACT-style** messaging platform: a Java **socket gateway** that holds **long-lived TCP connections** to airline endpoints (DCS, baggage, flight ops, GDS), a **C/C++ message parser** that decodes the wire format and applies routing rules, and a **PostgreSQL** instance that stores routing tables, message journals, and end-of-day reconciliation state. Today it runs on **RHEL VMs** in their own datacentres, scaled vertically, patched in-place, and failed over by hand. The board has approved a 12-month modernization. **This workshop covers the MVP** — the first vertical slice that proves the architecture on Azure, runs against a synthetic but realistic load, and is good enough to onboard a real airline partner for a controlled pilot.
+The customer (a real-time messaging operator) runs a 20-year-old messaging platform built around a custom framed wire protocol: a Java **socket gateway** that holds **long-lived TCP connections** to client endpoints, a **C/C++ message parser** reached over **HTTPS (REST/JSON)** that decodes the wire format and applies routing rules, and a **PostgreSQL** instance that stores routing tables, message journals, and end-of-day reconciliation state. Today it runs on **RHEL VMs** in their own datacentres, scaled vertically, patched in-place, and failed over by hand. The board has approved a 12-month modernization. **This workshop covers the MVP** — the first vertical slice that proves the architecture on Azure, runs against a synthetic but realistic load, and is good enough to onboard a real client partner for a controlled pilot.
 
 Full brief: [SCENARIO.md](SCENARIO.md).
 
@@ -31,7 +31,7 @@ Kubernetes words are reserved for Kubernetes objects in this repo:
 | **Cluster** | A Kubernetes (AKS) Cluster | Any non-Kubernetes cluster |
 | **`gateway-java`** | The Java socket gateway service (proper name) | A Kubernetes Node |
 | **`parser-cpp`** | The C++ message parser worker (proper name) | — |
-| **Connection** | A long-lived TCP/WebSocket socket from an airline endpoint to the gateway | An HTTP request |
+| **Connection** | A long-lived TCP/WebSocket socket from a client endpoint to the gateway | An HTTP request |
 
 ---
 
@@ -41,11 +41,11 @@ Kubernetes words are reserved for Kubernetes objects in this repo:
 - A **private, zone-redundant AKS Cluster** in each region with Istio service mesh, Workload Identity, and Key Vault CSI
 - The **replatformed messaging stack**:
   - `gateway-java` — Java socket gateway (TCP + WebSocket), session-affine, holding ~10k concurrent client sockets per Pod
-  - `parser-cpp` — C++ message parser (Type B/EDIFACT decoder), scaled by KEDA on queue depth
+  - `parser-cpp` — C++ message parser (custom wire-format decoder), reached over HTTPS (REST/JSON), scaled by KEDA on queue depth
   - `ops-console` — React operator console (the only HTTP surface, fronted by Front Door + WAF)
   - **Azure Database for PostgreSQL — Flexible Server** as the journal/routing store (HA, zone-redundant)
 - **GitOps** with Argo CD, deployment rings (dev → canary → prod) with a GitHub Actions gate
-- **Observability** via Log Analytics + Managed Prometheus + Managed Grafana, with airline-grade SLIs (message round-trip latency P99, socket churn, parser backlog)
+- **Observability** via Log Analytics + Managed Prometheus + Managed Grafana, with production-grade SLIs (message round-trip latency P99, socket churn, parser backlog)
 - **Chaos** experiments (Pod kill, Node drain, zone failure, region failover) executed against **live socket sessions**
 
 ---
@@ -110,7 +110,7 @@ The **Trainer Guide** drives any of the three from the same content.
 ├── infra/terraform/                   # all IaC (hub-spoke, AKS, ACR, KV, observability, Front Door, Postgres)
 ├── apps/                              # the replatformed services
 │   ├── gateway-java/                  # Java socket gateway (TCP + WebSocket)
-│   ├── parser-cpp/                    # C++ Type B / EDIFACT parser worker
+│   ├── parser-cpp/                    # C++ message parser worker (custom wire-format decoder)
 │   └── ops-console/                   # React operator console (the only HTTP surface)
 ├── k8s/                               # base manifests + dev / canary / prod overlays
 ├── gitops/                            # Argo CD app-of-apps + ring definitions
@@ -125,7 +125,7 @@ The **Trainer Guide** drives any of the three from the same content.
 
 ```mermaid
 flowchart LR
-  airline([Airline endpoints<br/>DCS / baggage / flight ops])
+  clients([Client endpoints<br/>partner systems / devices / services])
   ops([Ops team<br/>browsers])
   fd[Azure Front Door + WAF<br/>HTTP only — ops console]
   nlb[Standard Load Balancer<br/>TCP 4561 / 4562]
@@ -145,7 +145,7 @@ flowchart LR
     kv2[Key Vault]
   end
   obs[Log Analytics + Managed Prometheus + Managed Grafana]
-  airline -->|persistent TCP| nlb
+  clients -->|persistent TCP| nlb
   ops --> fd
   nlb -->|primary| aks1
   nlb -.failover.-> aks2

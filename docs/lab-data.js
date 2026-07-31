@@ -8,7 +8,7 @@ const TRAINER = {
     demo: "Run scripts/preflight.sh on a fresh laptop and time it. Pre-build the three images and push to a fallback ACR you control — at least one local Docker will fail on the gcc-based parser image.",
   },
   M00: {
-    talk: "This customer is not greenfield. They have a real wire protocol with airline endpoints that cannot reconnect during business hours, a NOC that watches socket counts and latency (not RPS), and a regulator-imposed RTO of 30 min / RPO < 1 min. Two decisions change everything: (1) the gateway is a StatefulSet behind a TCP Standard Load Balancer — sockets are sacred; (2) state stays out of the cluster — PostgreSQL is Flexible Server with zone-redundant HA.",
+    talk: "This customer is not greenfield. They have a real wire protocol with client endpoints that cannot reconnect during business hours, a NOC that watches socket counts and latency (not RPS), and a regulator-imposed RTO of 30 min / RPO < 1 min. Two decisions change everything: (1) the gateway is a StatefulSet behind a TCP Standard Load Balancer — sockets are sacred; (2) state stays out of the cluster — PostgreSQL is Flexible Server with zone-redundant HA.",
     demo: "Show the target architecture diagram next to the legacy diagram in SCENARIO.md; point at each box and say what replaces it. Fill in the ADR header and one decision row live so the room sees the shape.",
   },
   M01: {
@@ -24,7 +24,7 @@ const TRAINER = {
     demo: "Build and push one image live so the room sees tag and digest format. Show Argo OutOfSync, then click sync. After sync, ncat <NLB_IP> 4561, type PING, show PONG.",
   },
   M04: {
-    talk: "A/B at the parser, not the gateway. Moving sockets to a new gateway version tears down TCP connections — visible to airlines. The parser is stateless per request, so shifting 10% of decode calls to v2 changes nothing visible. Splitting termination from decoding makes parser releases boring.",
+    talk: "A/B at the parser, not the gateway. Moving sockets to a new gateway version tears down TCP connections — visible to connected clients. The parser is stateless per request, so shifting 10% of decode calls to v2 changes nothing visible. Splitting termination from decoding makes parser releases boring.",
     demo: "Show the current VirtualService (100% v1), edit it live to 90/10, watch Grafana split. Then switch to header match and show messages tagged x-cohort: beta hitting v2.",
   },
   M05: {
@@ -420,7 +420,7 @@ const LAB_DATA = {
           ],
         },
         {
-          id: "M03.7", module: "M03", title: "Ops console and trace a Type B message end to end", time: "~15 min",
+          id: "M03.7", module: "M03", title: "Ops console and trace a message end to end", time: "~15 min",
           precheck: [
             "What are the roles of Azure Front Door, Application Gateway, and Azure Load Balancer when fronting AKS?",
             "At which layers can TLS terminate on the way to a pod?",
@@ -429,7 +429,7 @@ const LAB_DATA = {
           steps: [
             "Open the ops console URL from the Front Door endpoint output.",
             "Run smoke in another terminal; watch the session count climb in real time.",
-            "Draw the path of a Type B message from airline socket to Postgres row.",
+            "Draw the path of a message from client socket to Postgres row.",
           ],
           validation: "Ops console shows live sessions changing as smoke runs; you can verbally trace a message end to end.",
           postcheck: [

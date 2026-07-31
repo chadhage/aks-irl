@@ -16,7 +16,7 @@ You can:
 
 ## 2. Where this fits in the replatform story
 
-Skybridge's regulator imposes RTO ≤ 30 min and RPO ≤ 1 min for the message journal. The legacy stack technically has a passive datacentre but the failover playbook is "tell the airlines to reconnect to a different VIP and pray". This module turns that into a measured, reversible operation.
+Skybridge's regulator imposes RTO ≤ 30 min and RPO ≤ 1 min for the message journal. The legacy stack technically has a passive datacentre but the failover playbook is "tell the clients to reconnect to a different VIP and pray". This module turns that into a measured, reversible operation.
 
 ## 3. Level target
 

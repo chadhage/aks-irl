@@ -25,7 +25,7 @@ Read [SCENARIO.md](../../SCENARIO.md) before starting if you haven't.
 ## 4. Talk track *(trainer, ~10 min)*
 
 Frame the room: this customer is *not* greenfield. They have:
-- a real wire protocol (Type B / EDIFACT) with real airline endpoints that **cannot be told to reconnect during business hours**;
+- a real custom wire protocol with real client endpoints that **cannot be told to reconnect during business hours**;
 - a 24×7 NOC that watches dashboards built around socket counts and message latency, not RPS;
 - a regulator-imposed RTO of 30 min and RPO of < 1 min for the message journal.
 
@@ -57,7 +57,7 @@ The trainer drives the discussion; you capture each decision and at least one *r
 | 4 | **Service mesh** | Istio managed addon (revision pinned) | Header-based A/B for parser cohorts; mTLS Pod-to-Pod by default. |
 | 5 | **Node OS** | Azure Linux | Faster boot improves zone-failover RTO for reconnecting sockets. |
 | 6 | **Zones** | 1+2+3 across all pools | 99.95 % SLA + protects against single-AZ loss. |
-| 7 | **Region pair** | eastus2 (primary) + westus3 (passive) | Postgres Flex geo-replica supported; latency to airline hubs acceptable. |
+| 7 | **Region pair** | eastus2 (primary) + westus3 (passive) | Postgres Flex geo-replica supported; latency to client hubs acceptable. |
 | 8 | **Identity** | Workload Identity + Entra | Postgres can authenticate via Entra → no long-lived DB passwords. |
 | 9 | **Secrets** | Key Vault CSI | Single source of truth; rotates without Pod restart for many secret types. |
 
@@ -66,7 +66,7 @@ Note these are **not** HTTP SLIs. The legacy NOC will not accept "% of 200 respo
 
 | SLI | Definition | SLO | 30-day budget |
 |---|---|---|---|
-| **Socket establishment success** | % of TCP `SYN` from known airline source IPs that reach `ESTABLISHED` in < 2 s | 99.95 % | 21m 36s |
+| **Socket establishment success** | % of TCP `SYN` from known client source IPs that reach `ESTABLISHED` in < 2 s | 99.95 % | 21m 36s |
 | **Message round-trip latency P99** | `gateway-java` receives envelope → ACK back to client | ≤ 250 ms | n/a |
 | **Parser decode success** | `parser_decoded_total / (decoded + failed)` | 99.99 % | n/a |
 | **Journal write durability** | Postgres acknowledged write within 1 s | 99.99 % | 4m 18s |

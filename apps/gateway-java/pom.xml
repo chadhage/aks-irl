@@ -6,7 +6,7 @@
   <version>1.0.0</version>
   <packaging>jar</packaging>
   <name>Skybridge Socket Gateway</name>
-  <description>Replatformed Type B / EDIFACT socket gateway for the WorkshopPlus.</description>
+  <description>Replatformed socket gateway (custom wire protocol) for the WorkshopPlus.</description>
   <properties>
     <maven.compiler.release>21</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

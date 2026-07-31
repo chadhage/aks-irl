@@ -8,7 +8,7 @@ Scoring: **2 = strong**, **1 = partial / missing nuance**, **0 = wrong or absent
 
 | # | Look-for | Pts |
 |---|---|---|
-| A1 | Names the Java socket gateway + C++ parser + Postgres replatform; calls out parts left untouched (wire protocol, airline endpoints, on-prem partners) | 5 |
+| A1 | Names the Java socket gateway + C++ parser + Postgres replatform; calls out parts left untouched (wire protocol, client endpoints, on-prem partners) | 5 |
 | A2 | Quantifies the SLO (e.g., 99.95 %) AND the 30-day budget AND argues why HTTP 2xx is wrong (TCP semantics, no request/response framing, persistent connections) | 5 |
 | A3 | Names a real leading indicator (e.g., SYN rate without ESTABLISHED follow-through, P95 connection setup time, NLB SNAT port exhaustion) | 5 |
 
@@ -26,7 +26,7 @@ Scoring: **2 = strong**, **1 = partial / missing nuance**, **0 = wrong or absent
 |---|---|---|
 | C1 | Names: SA token → cluster OIDC issuer → Entra federated-credential exchange → access token → Postgres Entra auth | 7 |
 | C2 | Refutes: Front Door is HTTP/L7; would terminate TCP, break socket semantics, drop messages mid-stream | 6 |
-| C3 | Header-based VirtualService match on `x-cohort: <airline>` routing to `parser-cpp` subset v2 | 7 |
+| C3 | Header-based VirtualService match on `x-cohort: <client>` routing to `parser-cpp` subset v2 | 7 |
 
 ## D. GitOps, rings, rollback (20)
 

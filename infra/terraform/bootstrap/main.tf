@@ -38,7 +38,7 @@ resource "azurerm_resource_group" "state" {
   location = var.location
   tags = {
     program  = "skybridge"
-    workshop = "airline-messaging-replatform-workshopplus"
+    workshop = "realtime-messaging-replatform-workshopplus"
     purpose  = "tfstate"
   }
 }

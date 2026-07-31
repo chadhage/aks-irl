@@ -456,7 +456,7 @@ The apps under [`apps/`](apps/) are **mocks** — see [LAB-GUIDE.md § The apps 
 
 ---
 
-### Activity M03.7 — Ops console and trace a Type B message end to end (~15 min)
+### Activity M03.7 — Ops console and trace a message end to end (~15 min)
 
 **Pre-check**
 
@@ -468,7 +468,7 @@ The apps under [`apps/`](apps/) are **mocks** — see [LAB-GUIDE.md § The apps 
 
 1. Open the ops console URL from `terraform output front_door_endpoint`.
 2. Run smoke in another terminal; watch the session count climb in real time.
-3. Draw the path of a Type B message from airline socket to Postgres row.
+3. Draw the path of a message from client socket to Postgres row.
 
 **Validation** — ops console shows live sessions changing as smoke runs; you can verbally trace a message end to end.
 

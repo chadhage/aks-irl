@@ -1,10 +1,10 @@
-// Skybridge Type B / EDIFACT message parser — workshop edition.
+// Skybridge custom wire-format message parser — workshop edition.
 //
 // Why C++: this is the workhorse of the legacy stack and the part the customer
 // is *not* willing to rewrite for the MVP. We lift it into a container with no
 // source changes beyond a clean CMake build and a tiny libmicrohttpd HTTP
-// shim — the gateway POSTs each envelope here and reads back a decoded
-// summary line.
+// shim — the gateway POSTs each envelope here (REST/JSON) and reads back a
+// decoded summary line.
 //
 // The two cohorts the workshop A/Bs between live in DECODE_V1 / DECODE_V2.
 
@@ -25,7 +25,7 @@ static const int   METRICS_PORT= std::atoi(std::getenv("PARSER_METRICS_PORT") ?:
 static std::atomic<uint64_t> g_decoded{0};
 static std::atomic<uint64_t> g_failed{0};
 
-// Trivial decoder — splits the envelope on '/', mimics the Type B header
+// Trivial decoder — splits the envelope on '/', mimics the wire-format header
 // fields (priority, destination, origin, smi/bid). Returns a one-line summary.
 static std::string decode_v1(const std::string& env) {
     std::stringstream out;

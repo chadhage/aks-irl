@@ -4,7 +4,7 @@
 # Usage:
 #   smoke.sh tcp <host> <port> <sessions> [options]
 #
-# Opens N TCP sockets to gateway-java, sends a synthetic Type B-shaped
+# Opens N TCP sockets to gateway-java, sends a synthetic framed
 # message on each, reads the ACK, records RTT. Reports established/dropped
 # counts and P50/P95/P99 RTT. Fails if >1% dropped or P99 > 250 ms (override
 # with --rtt-p99-ms / --drop-pct).
@@ -58,8 +58,8 @@ one_session() {
       exec 3<&-; exec 3>&-; return
     fi
     start=$(date +%s%N)
-    # Synthetic Type B-shaped envelope, '/' delimited
-    printf 'MSG QU/SYDYYXY/JFKYYXY/HDQTSXY/BAGGAGE/%s\n' "$id" >&3
+    # Synthetic framed envelope, '/' delimited
+    printf 'MSG QU/DEST0001/ORIG0001/HDR001/PAYLOAD/%s\n' "$id" >&3
     if IFS= read -r -t 5 ack <&3; then
       end=$(date +%s%N)
       rtt_ns=$((end-start))

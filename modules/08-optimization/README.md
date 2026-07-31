@@ -13,7 +13,7 @@ You can:
 
 ## 2. Where this fits in the replatform story
 
-Once the customer has the platform running and trusted, the next conversation is always cost. The two levers that matter most here are *right-sizing the gateway* (which over-provisions by default to absorb reconnect storms) and *scaling the parser to zero in quiet periods* (overnight, between flight banks).
+Once the customer has the platform running and trusted, the next conversation is always cost. The two levers that matter most here are *right-sizing the gateway* (which over-provisions by default to absorb reconnect storms) and *scaling the parser to zero in quiet periods* (overnight, between traffic peaks).
 
 ## 3. Level target
 

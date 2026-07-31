@@ -82,7 +82,7 @@ terraform output -raw front_door_endpoint
 - `terraform apply` exits 0.
 - All output values are non-empty.
 - In the Azure portal, both resource groups (`...-rg-eus2-*` and `...-rg-wus3-*`) exist with the expected resources (AKS, KV, Postgres Flex, ACR replica).
-- Tag `workshop=airline-messaging-replatform-workshopplus` is present on every RG.
+- Tag `workshop=realtime-messaging-replatform-workshopplus` is present on every RG.
 
 ## 8. Stretch (L400)
 

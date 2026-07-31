@@ -18,12 +18,12 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Replatformed Skybridge socket gateway — Netty-based TCP server that accepts
- * long-lived connections from airline endpoints, frames Type B / EDIFACT
- * messages, and forwards each message to the C++ parser via the in-mesh
- * Service "parser-cpp:9100". Stateful per-connection — sticky session via NLB.
+ * long-lived connections from client endpoints, frames the custom wire-protocol
+ * messages, and forwards each message to the C++ parser via REST/JSON over the
+ * in-mesh Service "parser-cpp:9100". Stateful per-connection — sticky session via NLB.
  *
  * Workshop scope: the wire protocol is intentionally simplified (newline-framed
- * ASCII envelopes) so participants can drive it from `ncat`. The real Type B
+ * ASCII envelopes) so participants can drive it from `ncat`. The real wire
  * framing is delegated to the C++ parser; the gateway only routes envelopes.
  */
 public final class GatewayMain {
@@ -62,7 +62,7 @@ public final class GatewayMain {
              .childHandler(new ChannelInitializer<SocketChannel>() {
                 @Override protected void initChannel(SocketChannel ch) {
                     ch.pipeline()
-                      // Read-idle 90 s — airline endpoints heartbeat every 60 s
+                      // Read-idle 90 s — client endpoints heartbeat every 60 s
                       .addLast(new IdleStateHandler(90, 0, 0, TimeUnit.SECONDS))
                       .addLast(new LineBasedFrameDecoder(64 * 1024))
                       .addLast(new StringDecoder())

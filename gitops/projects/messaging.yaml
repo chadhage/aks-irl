@@ -4,7 +4,7 @@ metadata:
   name: messaging
   namespace: argocd
 spec:
-  description: Skybridge real-time airline messaging platform (WorkshopPlus)
+  description: Skybridge real-time messaging platform (WorkshopPlus)
   sourceRepos:
     - https://github.com/REPLACE/aks-briefing-with-labs.git
   destinations:

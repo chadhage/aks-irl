@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>WorkshopPlus — Replatforming Airline Messaging to AKS</title>
-  <meta name="description" content="A guided, instructor-led WorkshopPlus that replatforms a legacy SOCKET-based real-time airline messaging system onto Azure Kubernetes Service." />
+  <title>WorkshopPlus — Replatforming a Real-Time Messaging System to AKS</title>
+  <meta name="description" content="A guided, instructor-led WorkshopPlus that replatforms a legacy socket-based real-time messaging system onto Azure Kubernetes Service." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -46,11 +46,11 @@
       <div class="hero-bg" aria-hidden="true"></div>
       <div class="hero-inner">
         <p class="eyebrow">Microsoft WorkshopPlus · Instructor-led · L200 → L300 (L400 stretch)</p>
-        <h1>Replatforming Real-Time Airline Messaging to <span class="grad">AKS</span></h1>
+        <h1>Replatforming a Real-Time Messaging System to <span class="grad">AKS</span></h1>
         <p class="lede">
-          A hands-on workshop that moves a 20-year-old <strong>socket-based Type B / EDIFACT messaging
-          platform</strong> — Java gateway, C/C++ parser, PostgreSQL on RHEL VMs — onto containers on
-          Azure Kubernetes Service, against the latency, throughput, and availability targets for airline messaging.
+          A hands-on workshop that moves a 20-year-old <strong>socket-based real-time messaging
+          platform</strong> — Java gateway, C/C++ parser over HTTPS (REST/JSON), PostgreSQL on RHEL VMs — onto containers on
+          Azure Kubernetes Service, against the latency, throughput, and availability targets a real-time messaging bus demands.
         </p>
         <div class="hero-cta">
           <a class="btn btn-primary" href="lab.html">Start the lab</a>
@@ -74,9 +74,9 @@
       <div class="scenario-grid">
         <div class="scenario-copy">
           <p>
-            <strong>Skybridge Messaging Services</strong> runs a real-time airline communications bus over
+            <strong>Skybridge Messaging Services</strong> runs a real-time messaging bus over
             <strong>persistent TCP sockets</strong>: a Java <em>socket gateway</em> holding long-lived connections
-            to airline endpoints (DCS, baggage, flight ops, GDS), a <em>C/C++ message parser</em> that decodes the
+            to client endpoints, a <em>C/C++ message parser</em> reached over <em>HTTPS (REST/JSON)</em> that decodes the
             wire format and applies routing rules, and a <em>PostgreSQL</em> store for routing tables, journals, and
             end-of-day reconciliation. Today it runs on RHEL VMs, scaled vertically, patched in place, and failed
             over by hand.
@@ -84,7 +84,7 @@
           <p>
             The board approved a 12-month modernization. <strong>This workshop builds the MVP</strong> — the first
             vertical slice that proves the architecture on Azure against realistic load, sufficient to onboard one
-            airline partner for a controlled pilot.
+            client partner for a controlled pilot.
           </p>
         </div>
         <aside class="pain-card">
@@ -104,7 +104,7 @@
           <header><span class="dot"></span> Legacy estate</header>
           <ul>
             <li>Java 8 / Netty 3 gateway · ~5k sockets/VM · 32 vCPU vertical scale</li>
-            <li>C/C++ Type B / EDIFACT parser · gcc 4.8 · shared-memory IPC</li>
+            <li>C/C++ custom wire-format parser · gcc 4.8 · shared-memory IPC</li>
             <li>PostgreSQL 11 · streaming replication · ~15 min manual failover</li>
             <li>RHEL 7/8 VMs · handcrafted HA pair per region</li>
           </ul>
@@ -134,7 +134,7 @@
       <div class="diagram-wrap">
         <pre class="mermaid">
 flowchart LR
-  airline([Airline endpoints<br/>DCS / baggage / flight ops]):::ext
+  clients([Client endpoints<br/>partner systems / devices / services]):::ext
   ops([Ops team<br/>browsers]):::ext
   fd[Azure Front Door + WAF<br/>HTTP only — ops console]:::azure
   nlb[Standard Load Balancer<br/>TCP 4561 / 4562]:::azure
@@ -154,7 +154,7 @@ flowchart LR
     kv2[Key Vault]:::azure
   end
   obs[Log Analytics + Managed Prometheus + Grafana]:::obs
-  airline -->|persistent TCP| nlb
+  clients -->|persistent TCP| nlb
   ops --> fd
   nlb -->|primary| aks1
   nlb -.failover.-> aks2
@@ -229,8 +229,8 @@ flowchart LR
         </table>
       </div>
       <blockquote class="success-quote">
-        “If we connect a single non-production airline partner to this MVP next Monday, it stays up for a full week of
-        day-of-operations traffic, we can ship a parser rule change to canary without a maintenance window, and a
+        “If we connect a single non-production client partner to this MVP next Monday, it stays up for a full week of
+        peak-hours traffic, we can ship a parser rule change to canary without a maintenance window, and a
         planned zone failure doesn't make the on-call phone ring.”
         <cite>— the customer's bar for success</cite>
       </blockquote>

@@ -10,13 +10,13 @@ You can:
 
 - Run `parser-cpp:v1` and `parser-cpp:v2` side-by-side as two subsets of the same Istio destination
 - Shift gateway → parser traffic by **weight** (e.g., 90/10) without redeploying the gateway
-- Switch to **header-based** routing (`x-cohort: beta`) so a chosen airline cohort hits v2 only
+- Switch to **header-based** routing (`x-cohort: beta`) so a chosen client cohort hits v2 only
 - Read a Grafana panel split by `parser_version` to compare RTT and decode-error rates
 - Cut traffic back to 100 % v1 in under 30 seconds (the kill switch)
 
 ## 2. Where this fits in the replatform story
 
-The customer wants to ship a new routing rule into the C++ decoder without telling airlines anything. The whole point of running on a mesh is that we can do this **at the parser leg only** — the gateway and its sockets don't move. This is the exact pattern they'll use every quarter for the rest of the year.
+The customer wants to ship a new routing rule into the C++ decoder without telling clients anything. The whole point of running on a mesh is that we can do this **at the parser leg only** — the gateway and its sockets don't move. This is the exact pattern they'll use every quarter for the rest of the year.
 
 ## 3. Level target
 
@@ -26,8 +26,8 @@ The customer wants to ship a new routing rule into the C++ decoder without telli
 ## 4. Talk track *(trainer)*
 
 Why we A/B at the **parser** not the **gateway**:
-- Moving sockets to a new gateway version means tearing down TCP connections — visible to airlines, ops-team-noticeable.
-- The parser is stateless per request. Shifting 10 % of *decode* calls to v2 changes nothing visible at the airline.
+- Moving sockets to a new gateway version means tearing down TCP connections — visible to connected clients, ops-team-noticeable.
+- The parser is stateless per request. Shifting 10 % of *decode* calls to v2 changes nothing visible at the client.
 
 This is one of the highest-leverage architectural decisions in the whole replatform: by splitting "termination" from "decoding" we made parser releases boring.
 
@@ -104,7 +104,7 @@ Time yourself: revert the `VirtualService` to 100 % v1, push, watch Argo sync. T
 ## 8. Stretch (L400)
 
 - Replace the hand-edited `VirtualService` with an **Argo Rollouts** AnalysisTemplate that auto-promotes v2 to 50 % only if decode-error rate stays below 0.01 %.
-- Express the routing rule as an Istio **WasmPlugin** that hashes connection-IDs and routes odd hex values to v2 — useful for stable per-airline A/B.
+- Express the routing rule as an Istio **WasmPlugin** that hashes connection-IDs and routes odd hex values to v2 — useful for stable per-client A/B.
 
 ## 9. Cleanup
 

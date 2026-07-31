@@ -8,8 +8,8 @@ You are **not** containerizing any real customer code in this workshop. Everythi
 
 | Mock | Stands in for | What it actually does |
 |---|---|---|
-| `gateway-java` | A Java/Netty TCP gateway terminating long-lived airline sockets | Accepts TCP on 4561/4562, speaks a 3-verb protocol (`PING`, `COHORT`, `MSG`), forwards decode work to the parser over HTTP, emits Prometheus metrics |
-| `parser-cpp` | A C++ message decoder (Type B / EDIFACT-shaped) | Splits ASCII envelopes, returns JSON; `v1` and `v2` differ only enough to A/B test |
+| `gateway-java` | A Java/Netty TCP gateway terminating long-lived client sockets | Accepts TCP on 4561/4562, speaks a 3-verb protocol (`PING`, `COHORT`, `MSG`), forwards decode work to the parser via REST/JSON over HTTP (mTLS in-mesh), emits Prometheus metrics |
+| `parser-cpp` | A C++ message decoder (custom wire-format) | Splits ASCII envelopes, returns JSON; `v1` and `v2` differ only enough to A/B test |
 | `ops-console` | A NOC dashboard | Static nginx + a vanilla-JS page polling `/api/metrics` |
 
 The point is the **architecture, controls, and operational moves** — not the application logic. When you finish you will have run a real socket workload at production-grade shape on AKS; swapping in real customer code later is mostly a Dockerfile change.
@@ -117,7 +117,7 @@ Walk the 9 Day-0 decisions as a cohort. Commit `modules/00-envisioning/adr-001-a
 
 **Done when** — smoke reports `50/50 sessions, 0 dropped, P99 RTT < 250 ms`; ops console shows live sessions.
 
-**Self-check** — *Trace one Type B message from airline → Postgres journal. List every TLS termination point.*
+**Self-check** — *Trace one message from client socket → Postgres journal. List every TLS termination point.*
 
 🎉 **Success #1 — MVP live.**
 

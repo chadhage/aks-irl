@@ -371,6 +371,22 @@
       .modal h2 { margin-top: 0; }
 
       .hidden { display: none !important; }
+
+      @media (max-width: 560px) {
+        header.top { flex-wrap: wrap; padding: 12px 16px; gap: 10px; }
+        header.top .title { font-size: 0.98rem; }
+        header.top .meta { width: 100%; justify-content: space-between; }
+        main { padding: 18px 16px; }
+        .card { padding: 18px; }
+        h1 { font-size: 1.45rem; }
+        .actions, .actions.start { justify-content: stretch; }
+        .actions .btn { flex: 1 1 auto; }
+        .nav-actions { flex-wrap: wrap; row-gap: 10px; }
+        .nav-actions .left, .nav-actions .right { flex: 1 1 auto; }
+        .q-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+        .score-circle { width: 128px; height: 128px; }
+        .modal { padding: 18px; }
+      }
     </style>
   </head>
   <body>

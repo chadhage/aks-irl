@@ -66,14 +66,15 @@ code { font-family: var(--mono); font-size: 0.88em; background: var(--surface-2)
   max-width: var(--maxw); margin: 0 auto; padding: 0.85rem 1.5rem;
   display: flex; align-items: center; gap: 1.5rem;
 }
-.brand { display: flex; align-items: center; gap: 0.6rem; font-weight: 800; letter-spacing: -0.02em; color: var(--text); }
+.brand { display: flex; align-items: center; gap: 0.6rem; font-weight: 800; letter-spacing: -0.02em; color: var(--text); flex: 0 0 auto; }
 .brand-mark { color: var(--brand); display: grid; place-items: center; }
-.brand-text { font-size: 1.02rem; }
+.brand-text { font-size: 1.02rem; white-space: nowrap; }
 .nav-links {
-  list-style: none; display: flex; gap: 1.4rem; margin: 0; padding: 0;
+  list-style: none; display: flex; flex-wrap: nowrap; gap: 1.4rem; margin: 0; padding: 0;
   margin-left: auto; align-items: center; font-size: 0.93rem; font-weight: 500;
 }
-.nav-links a { color: var(--text-dim); transition: color 0.15s; }
+.nav-links li { flex: 0 0 auto; }
+.nav-links a { color: var(--text-dim); transition: color 0.15s; white-space: nowrap; }
 .nav-links a:hover { color: var(--text); }
 .nav-cta {
   background: linear-gradient(135deg, var(--brand), var(--brand-2));
@@ -81,6 +82,15 @@ code { font-family: var(--mono); font-size: 0.88em; background: var(--surface-2)
 }
 .nav-toggle { display: none; background: none; border: 0; cursor: pointer; flex-direction: column; gap: 5px; padding: 6px; margin-left: auto; }
 .nav-toggle span { width: 24px; height: 2px; background: var(--text); border-radius: 2px; transition: 0.25s; }
+
+/* Collapsed nav: shown by JS whenever the links would overflow their row (any width). */
+.nav.is-collapsed .nav-toggle { display: flex; }
+.nav.is-collapsed .nav-links {
+  position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; align-items: flex-start;
+  background: var(--bg); border-bottom: 1px solid var(--border); padding: 1rem 1.5rem; gap: 1rem;
+  margin: 0; transform: translateY(-12px); opacity: 0; pointer-events: none; transition: 0.2s;
+}
+.nav.is-collapsed .nav-links.is-open { transform: none; opacity: 1; pointer-events: auto; }
 
 /* ---------- Hero ---------- */
 .hero { position: relative; overflow: hidden; padding: 5.5rem 1.5rem 4.5rem; }
@@ -244,9 +254,18 @@ code { font-family: var(--mono); font-size: 0.88em; background: var(--surface-2)
     margin: 0; transform: translateY(-12px); opacity: 0; pointer-events: none; transition: 0.2s;
   }
   .nav-links.is-open { transform: none; opacity: 1; pointer-events: auto; }
-  .hero-stats { grid-template-columns: 1fr 1fr; }
+  .hero { padding: 3.5rem 1.25rem 3rem; }
+  .hero-stats { grid-template-columns: 1fr 1fr; gap: 0.75rem; }
   .moves-grid, .modules-grid, .roles-grid { grid-template-columns: 1fr; }
   .section { padding: 3.5rem 1.25rem; }
+  .success-quote { padding: 1.3rem 1.4rem; font-size: 1rem; }
+  .lab-layout { padding: 1rem 1rem 3rem; }
+  .to-top { bottom: 1rem; right: 1rem; }
+}
+@media (max-width: 400px) {
+  .hero-stats { grid-template-columns: 1fr; }
+  .nav { padding: 0.75rem 1.1rem; }
+  .brand-text { font-size: 0.94rem; }
 }
 @media (prefers-reduced-motion: reduce) {
   * { scroll-behavior: auto !important; }
