@@ -34,17 +34,17 @@ resource "random_string" "suffix" {
 }
 
 resource "azurerm_resource_group" "state" {
-  name     = "sita-tfstate-${random_string.suffix.result}"
+  name     = "skybridge-tfstate-${random_string.suffix.result}"
   location = var.location
   tags = {
-    program  = "sita"
+    program  = "skybridge"
     workshop = "airline-messaging-replatform-workshopplus"
     purpose  = "tfstate"
   }
 }
 
 resource "azurerm_storage_account" "state" {
-  name                            = "sitatfstate${random_string.suffix.result}"
+  name                            = "skybridgetfstate${random_string.suffix.result}"
   resource_group_name             = azurerm_resource_group.state.name
   location                        = var.location
   account_tier                    = "Standard"

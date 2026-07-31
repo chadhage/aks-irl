@@ -9,7 +9,7 @@ ACTION=${2:-create}
 cd "$(dirname "$0")/../infra/terraform/envs/lab"
 RG=$(terraform output -raw primary_resource_group)
 LOC=$(terraform output -raw aks_primary_name | awk -F- '{print $5}')
-VM=sita-jumpbox-${LAB}
+VM=skybridge-jumpbox-${LAB}
 
 if [ "$ACTION" = "--destroy" ]; then
   az vm delete -g $RG -n $VM -y

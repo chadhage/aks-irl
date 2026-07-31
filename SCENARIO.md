@@ -6,7 +6,7 @@
 
 ## The customer
 
-**Skybridge Messaging Services** is a tier-1 airline messaging operator. They move ~2.4 billion messages a month between airlines, ground handlers, GDSs, baggage systems, and flight-operations platforms. Their flagship product is a real-time **Type B / SITATEX-style** messaging bus over **persistent TCP sockets**, with strict end-to-end SLAs.
+**Skybridge Messaging Services** is a tier-1 airline messaging operator. They move ~2.4 billion messages a month between airlines, ground handlers, GDSs, baggage systems, and flight-operations platforms. Their flagship product is a real-time **Type B / EDIFACT-style** messaging bus over **persistent TCP sockets**, with strict end-to-end SLAs.
 
 | Dimension | Today |
 |---|---|

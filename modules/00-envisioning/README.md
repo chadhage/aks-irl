@@ -25,7 +25,7 @@ Read [SCENARIO.md](../../SCENARIO.md) before starting if you haven't.
 ## 4. Talk track *(trainer, ~10 min)*
 
 Frame the room: this customer is *not* greenfield. They have:
-- a real wire protocol (Type B / SITATEX) with real airline endpoints that **cannot be told to reconnect during business hours**;
+- a real wire protocol (Type B / EDIFACT) with real airline endpoints that **cannot be told to reconnect during business hours**;
 - a 24×7 NOC that watches dashboards built around socket counts and message latency, not RPS;
 - a regulator-imposed RTO of 30 min and RPO of < 1 min for the message journal.
 

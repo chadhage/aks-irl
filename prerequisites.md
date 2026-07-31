@@ -109,18 +109,18 @@ The trainer will assume you have done these. We will *not* spend the first hour 
 
 `{program}-{lab}-{purpose}-{region}-{instance}`
 
-- `program` = `sita`
+- `program` = `skybridge`
 - `lab` = `l01` (the lab identifier — defaults to `01`; you only need one)
 - `purpose` = `aks`, `kv`, `acr`, `rg`, `vnet`, `pg`, `nlb`, …
 - `region` = `eus2`, `wus3`
 - `instance` = 4-char random suffix from Terraform `random_string`
 
 Examples:
-- Primary resource group: `sita-l01-rg-eus2-a1b2`
-- AKS Cluster: `sita-l01-aks-eus2-a1b2`
-- Postgres Flexible Server: `sita-l01-pg-eus2-a1b2`
-- Messaging NLB IP: `sita-l01-nlb-eus2-a1b2`
-- ACR: `sital01acreus2a1b2` (no dashes — ACR limitation)
+- Primary resource group: `skybridge-l01-rg-eus2-a1b2`
+- AKS Cluster: `skybridge-l01-aks-eus2-a1b2`
+- Postgres Flexible Server: `skybridge-l01-pg-eus2-a1b2`
+- Messaging NLB IP: `skybridge-l01-nlb-eus2-a1b2`
+- ACR: `skybridgel01acreus2a1b2` (no dashes — ACR limitation)
 
 ## Cost guardrails
 

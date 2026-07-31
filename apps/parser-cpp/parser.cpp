@@ -1,4 +1,4 @@
-// Skybridge Type B / SITATEX message parser — workshop edition.
+// Skybridge Type B / EDIFACT message parser — workshop edition.
 //
 // Why C++: this is the workhorse of the legacy stack and the part the customer
 // is *not* willing to rewrite for the MVP. We lift it into a container with no

@@ -9,7 +9,7 @@ You are **not** containerizing any real customer code in this workshop. Everythi
 | Mock | Stands in for | What it actually does |
 |---|---|---|
 | `gateway-java` | A Java/Netty TCP gateway terminating long-lived airline sockets | Accepts TCP on 4561/4562, speaks a 3-verb protocol (`PING`, `COHORT`, `MSG`), forwards decode work to the parser over HTTP, emits Prometheus metrics |
-| `parser-cpp` | A C++ message decoder (Type B / SITATEX-shaped) | Splits ASCII envelopes, returns JSON; `v1` and `v2` differ only enough to A/B test |
+| `parser-cpp` | A C++ message decoder (Type B / EDIFACT-shaped) | Splits ASCII envelopes, returns JSON; `v1` and `v2` differ only enough to A/B test |
 | `ops-console` | A NOC dashboard | Static nginx + a vanilla-JS page polling `/api/metrics` |
 
 The point is the **architecture, controls, and operational moves** — not the application logic. When you finish you will have run a real socket workload at production-grade shape on AKS; swapping in real customer code later is mostly a Dockerfile change.

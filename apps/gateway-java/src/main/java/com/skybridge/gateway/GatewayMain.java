@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Replatformed Skybridge socket gateway — Netty-based TCP server that accepts
- * long-lived connections from airline endpoints, frames Type B / SITATEX
+ * long-lived connections from airline endpoints, frames Type B / EDIFACT
  * messages, and forwards each message to the C++ parser via the in-mesh
  * Service "parser-cpp:9100". Stateful per-connection — sticky session via NLB.
  *

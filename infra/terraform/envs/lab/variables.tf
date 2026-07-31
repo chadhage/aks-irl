@@ -16,7 +16,7 @@ variable "lab_id" {
 variable "program" {
   description = "Program prefix."
   type        = string
-  default     = "sita"
+  default     = "skybridge"
 }
 
 variable "primary_region" {

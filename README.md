@@ -13,7 +13,7 @@
 
 ## The scenario in one paragraph
 
-The customer (a real-time airline communications operator) runs a 20-year-old **Type B / SITATEX / EDIFACT-style** messaging platform: a Java **socket gateway** that holds **long-lived TCP connections** to airline endpoints (DCS, baggage, flight ops, GDS), a **C/C++ message parser** that decodes the wire format and applies routing rules, and a **PostgreSQL** instance that stores routing tables, message journals, and end-of-day reconciliation state. Today it runs on **RHEL VMs** in their own datacentres, scaled vertically, patched in-place, and failed over by hand. The board has approved a 12-month modernization. **This workshop covers the MVP** — the first vertical slice that proves the architecture on Azure, runs against a synthetic but realistic load, and is good enough to onboard a real airline partner for a controlled pilot.
+The customer (a real-time airline communications operator) runs a 20-year-old **Type B / EDIFACT-style** messaging platform: a Java **socket gateway** that holds **long-lived TCP connections** to airline endpoints (DCS, baggage, flight ops, GDS), a **C/C++ message parser** that decodes the wire format and applies routing rules, and a **PostgreSQL** instance that stores routing tables, message journals, and end-of-day reconciliation state. Today it runs on **RHEL VMs** in their own datacentres, scaled vertically, patched in-place, and failed over by hand. The board has approved a 12-month modernization. **This workshop covers the MVP** — the first vertical slice that proves the architecture on Azure, runs against a synthetic but realistic load, and is good enough to onboard a real airline partner for a controlled pilot.
 
 Full brief: [SCENARIO.md](SCENARIO.md).
 
