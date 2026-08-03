@@ -39,19 +39,19 @@ jobs:
           tenant-id: ${{ env.AZURE_TENANT_ID }}
           subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
       - name: ACR login
-        run: az acr login -n $ACR_NAME
+        run: az acr login -n "$ACR_NAME"
       - name: Build & push
         id: image
         run: |
-          IMG="$ACR_NAME.azurecr.io/${{ matrix.app }}"
+          IMG="${ACR_NAME}.azurecr.io/${{ matrix.app }}"
           SHA="${GITHUB_SHA::7}"
-          docker build --build-arg APP_VERSION=$SHA -t $IMG:$SHA apps/${{ matrix.app }}
-          docker push $IMG:$SHA
+          docker build --build-arg "APP_VERSION=$SHA" -t "${IMG}:${SHA}" "apps/${{ matrix.app }}"
+          docker push "${IMG}:${SHA}"
           if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
-            docker tag  $IMG:$SHA $IMG:dev-latest
-            docker push $IMG:dev-latest
+            docker tag "${IMG}:${SHA}" "${IMG}:dev-latest"
+            docker push "${IMG}:dev-latest"
           fi
-          echo "ref=$IMG:$SHA" >> "$GITHUB_OUTPUT"
+          echo "ref=${IMG}:${SHA}" >> "$GITHUB_OUTPUT"
       - name: Trivy scan
         uses: aquasecurity/trivy-action@v0.36.0
         with:
@@ -73,9 +73,7 @@ jobs:
         run: |
           SHA="${GITHUB_SHA::7}"
           cd k8s/overlays/canary
-          for app in gateway-java parser-cpp ops-console; do
-            sed -i "s|newTag:.*|newTag: $SHA|" kustomization.yaml || true
-          done
+          sed -i "s|newTag:.*|newTag: $SHA|" kustomization.yaml
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -A
@@ -112,16 +110,14 @@ jobs:
         run: |
           SHA="${GITHUB_SHA::7}"
           BR="auto/prod-bump-$SHA"
-          git checkout -b $BR
+          git checkout -b "$BR"
           cd k8s/overlays/prod
-          for app in gateway-java parser-cpp ops-console; do
-            sed -i "s|newTag:.*|newTag: $SHA|" kustomization.yaml
-          done
+          sed -i "s|newTag:.*|newTag: $SHA|" kustomization.yaml
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git commit -am "ci: bump prod to ${SHA}"
-          git push -u origin $BR
+          git push -u origin "$BR"
           gh pr create \
             --title "Bump prod to $SHA" \
             --body "Automated promotion after canary socket-soak passed." \
-            --base main --head $BR --label "ring:prod"
+            --base main --head "$BR" --label "ring:prod"
