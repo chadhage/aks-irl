@@ -12,6 +12,7 @@ locals {
   base_cidr = var.region_short == "eus2" ? "10.10.0.0/16" : "10.20.0.0/16"
   aks_cidr  = var.region_short == "eus2" ? "10.10.0.0/22" : "10.20.0.0/22"
   pe_cidr   = var.region_short == "eus2" ? "10.10.4.0/24" : "10.20.4.0/24"
+  pg_cidr   = var.region_short == "eus2" ? "10.10.5.0/24" : "10.20.5.0/24"
 }
 
 resource "azurerm_virtual_network" "spoke" {
@@ -37,6 +38,21 @@ resource "azurerm_subnet" "private_endpoints" {
   private_endpoint_network_policies = "Enabled"
 }
 
+resource "azurerm_subnet" "postgres" {
+  name                 = "snet-postgres"
+  resource_group_name  = var.resource_group_name
+  virtual_network_name = azurerm_virtual_network.spoke.name
+  address_prefixes     = [local.pg_cidr]
+
+  delegation {
+    name = "postgres-flexible-server"
+    service_delegation {
+      name    = "Microsoft.DBforPostgreSQL/flexibleServers"
+      actions = ["Microsoft.Network/virtualNetworks/subnets/join/action"]
+    }
+  }
+}
+
 # Peerings (spoke <-> hub)
 resource "azurerm_virtual_network_peering" "spoke_to_hub" {
   name                      = "peer-to-hub"
@@ -57,3 +73,4 @@ resource "azurerm_virtual_network_peering" "hub_to_spoke" {
 output "vnet_id" { value = azurerm_virtual_network.spoke.id }
 output "aks_subnet_id" { value = azurerm_subnet.aks_nodes.id }
 output "pe_subnet_id" { value = azurerm_subnet.private_endpoints.id }
+output "postgres_subnet_id" { value = azurerm_subnet.postgres.id }

@@ -278,7 +278,7 @@ kubectl -n messaging-prod get pods -w &
 kubectl -n messaging-prod logs -f sts/gateway-java --tail=50
 
 # Detect parser version split from the client side
-for i in {1..50}; do ./scripts/smoke.sh tcp $NLB_IP 4561 1 --print-parser-version; done | sort | uniq -c
+./scripts/smoke.sh tcp $NLB_IP 4561 50 --duration 10s --json-output evidence/parser-split.json
 
 # Force-resync an Argo app
 argocd app sync ring-dev --prune

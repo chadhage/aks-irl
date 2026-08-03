@@ -48,6 +48,22 @@ variable "admin_object_ids" {
   default     = []
 }
 
+variable "postgres_administrator_object_id" {
+  description = "Object ID of the Entra principal that administers PostgreSQL."
+  type        = string
+}
+
+variable "postgres_administrator_principal_name" {
+  description = "Display name or user principal name of the PostgreSQL Entra administrator."
+  type        = string
+}
+
+variable "postgres_administrator_principal_type" {
+  description = "Type of PostgreSQL Entra administrator principal."
+  type        = string
+  default     = "Group"
+}
+
 variable "node_pool_user_min" {
   description = "User node-pool minimum size."
   type        = number

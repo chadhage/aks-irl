@@ -15,6 +15,7 @@ import io.prometheus.client.Histogram;
 import io.prometheus.client.exporter.HTTPServer;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Replatformed Skybridge socket gateway — Netty-based TCP server that accepts
@@ -32,6 +33,9 @@ public final class GatewayMain {
     private static final int HTTP_PORT = Integer.parseInt(env("GATEWAY_HTTP_PORT", "8080"));
     private static final String VERSION = env("APP_VERSION", "v1");
     private static final String REGION  = env("REGION", "unknown");
+    private static final AtomicBoolean DRAINING = new AtomicBoolean(false);
+    private static volatile Channel serverChannel;
+    private static JournalStore journalStore;
 
     // Prometheus telemetry — exported on /metrics by the HTTPServer below.
     static final Gauge ACTIVE_CONNECTIONS = Gauge.build()
@@ -45,8 +49,14 @@ public final class GatewayMain {
             .labelNames("version", "parser_version")
             .buckets(0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5)
             .register();
+    static final Histogram JOURNAL_LATENCY = Histogram.build()
+            .name("gateway_journal_seconds").help("PostgreSQL journal write latency")
+            .labelNames("region", "result")
+            .buckets(0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5)
+            .register();
 
     public static void main(String[] args) throws Exception {
+        journalStore = PostgresJournalStore.fromEnvironment();
         new HTTPServer.Builder().withPort(HTTP_PORT).build();      // /metrics + /healthz
         HealthHttp.start(HTTP_PORT + 1, VERSION, REGION);          // tiny /readyz on +1
 
@@ -71,6 +81,7 @@ public final class GatewayMain {
                 }
              });
             ChannelFuture f = b.bind(TCP_PORT).sync();
+            serverChannel = f.channel();
             System.out.printf("gateway-java %s region=%s listening tcp/%d http/%d%n",
                     VERSION, REGION, TCP_PORT, HTTP_PORT);
             f.channel().closeFuture().sync();
@@ -78,6 +89,27 @@ public final class GatewayMain {
             boss.shutdownGracefully();
             work.shutdownGracefully();
         }
+    }
+
+    static boolean isDraining() {
+        return DRAINING.get();
+    }
+
+    static void beginDrain() {
+        if (DRAINING.compareAndSet(false, true) && serverChannel != null) {
+            serverChannel.close();
+        }
+    }
+
+    static void awaitDrained(long timeoutSeconds) throws InterruptedException {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(timeoutSeconds);
+        while (ACTIVE_CONNECTIONS.labels(VERSION, REGION).get() > 0 && System.nanoTime() < deadline) {
+            Thread.sleep(250);
+        }
+    }
+
+    static JournalStore journalStore() {
+        return journalStore;
     }
 
     private static String env(String k, String d) {

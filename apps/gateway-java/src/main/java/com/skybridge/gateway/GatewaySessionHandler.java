@@ -9,6 +9,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.util.UUID;
 
 /**
  * One instance per accepted socket. Reads newline-framed envelopes, forwards
@@ -27,6 +28,7 @@ final class GatewaySessionHandler extends SimpleChannelInboundHandler<String> {
     private final String version;
     private final String region;
     private String cohort = "default";
+    private boolean countedActive;
 
     GatewaySessionHandler(String version, String region) {
         this.version = version;
@@ -35,13 +37,18 @@ final class GatewaySessionHandler extends SimpleChannelInboundHandler<String> {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
+        if (GatewayMain.isDraining()) {
+            ctx.close();
+            return;
+        }
         GatewayMain.ACTIVE_CONNECTIONS.labels(version, region).inc();
+        countedActive = true;
         ctx.writeAndFlush("HELO gateway-java " + version + " region=" + region + "\n");
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
-        GatewayMain.ACTIVE_CONNECTIONS.labels(version, region).dec();
+        if (countedActive) GatewayMain.ACTIVE_CONNECTIONS.labels(version, region).dec();
     }
 
     @Override
@@ -61,16 +68,19 @@ final class GatewaySessionHandler extends SimpleChannelInboundHandler<String> {
             GatewayMain.MESSAGES.labels(version, region, "bad").inc();
             return;
         }
-        Histogram.Timer t = GatewayMain.ROUND_TRIP.labels(version, "unknown").startTimer();
+        long started = System.nanoTime();
         try {
-            String response = callParser(line.substring(4), cohort);
-            ctx.writeAndFlush("ACK " + response + "\n");
+            String messageId = UUID.randomUUID().toString();
+            ParserResponse response = callParser(line.substring(4), cohort);
+            GatewayMain.journalStore().append(messageId, line.substring(4), response.version(), region);
+                GatewayMain.ROUND_TRIP.labels(version, response.version())
+                    .observe((System.nanoTime() - started) / 1_000_000_000.0);
+            ctx.writeAndFlush("ACK id=" + messageId + " parser=" + response.version()
+                    + " " + response.body() + "\n");
             GatewayMain.MESSAGES.labels(version, region, "ok").inc();
         } catch (Exception e) {
             ctx.writeAndFlush("NAK " + e.getClass().getSimpleName() + "\n");
             GatewayMain.MESSAGES.labels(version, region, "err").inc();
-        } finally {
-            t.observeDuration();
         }
     }
 
@@ -84,7 +94,7 @@ final class GatewaySessionHandler extends SimpleChannelInboundHandler<String> {
         ctx.close();
     }
 
-    private static String callParser(String envelope, String cohort) throws Exception {
+    private static ParserResponse callParser(String envelope, String cohort) throws Exception {
         HttpURLConnection c = (HttpURLConnection) URI.create(PARSER_URL).toURL().openConnection();
         c.setRequestMethod("POST");
         c.setDoOutput(true);
@@ -96,7 +106,9 @@ final class GatewaySessionHandler extends SimpleChannelInboundHandler<String> {
             os.write(envelope.getBytes());
         }
         try (BufferedReader r = new BufferedReader(new InputStreamReader(c.getInputStream()))) {
-            return r.readLine();
+            return new ParserResponse(c.getHeaderField("x-parser-version"), r.readLine());
         }
     }
+
+    private record ParserResponse(String version, String body) {}
 }

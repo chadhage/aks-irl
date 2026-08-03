@@ -27,8 +27,8 @@ patches:
         value: 3
 images:
   - name: REPLACE_ACR/gateway-java
-    newTag: REPLACE_PROD_TAG
+    newTag: v1
   - name: REPLACE_ACR/parser-cpp
-    newTag: REPLACE_PROD_TAG
+    newTag: v1
   - name: REPLACE_ACR/ops-console
-    newTag: REPLACE_PROD_TAG
+    newTag: v1

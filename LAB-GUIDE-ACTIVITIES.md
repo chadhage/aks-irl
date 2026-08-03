@@ -545,7 +545,7 @@ The apps under [`apps/`](apps/) are **mocks** — see [LAB-GUIDE.md § The apps 
 3. Run a synthetic loop and check parser-version distribution:
 
    ```bash
-   for i in {1..50}; do ./scripts/smoke.sh tcp $NLB_IP 4561 1 --print-parser-version; done | sort | uniq -c
+   ./scripts/smoke.sh tcp $NLB_IP 4561 50 --duration 10s --json-output evidence/parser-split.json
    ```
 
 **Validation** — observed split is approximately 45/5 across 50 calls (Istio is statistical, not deterministic).

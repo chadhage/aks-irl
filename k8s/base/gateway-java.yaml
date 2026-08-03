@@ -19,6 +19,7 @@ spec:
     metadata:
       labels: { app: gateway-java, version: v1, tier: data-plane }
       annotations:
+        azure.workload.identity/use: "true"
         prometheus.io/scrape: "true"
         prometheus.io/path: "/metrics"
         prometheus.io/port: "8080"
@@ -54,6 +55,15 @@ spec:
               valueFrom: { fieldRef: { fieldPath: spec.nodeName } }
             - name: PARSER_URL
               value: "http://parser-cpp.messaging.svc.cluster.local:9100/decode"
+            - name: PGHOST
+              value: REPLACE_POSTGRES_FQDN
+            - name: PGDATABASE
+              value: messaging
+            - name: PGUSER
+              value: REPLACE_POSTGRES_IDENTITY_NAME
+          lifecycle:
+            preStop:
+              httpGet: { path: /drain, port: health }
           readinessProbe:
             httpGet: { path: /readyz, port: health }
             periodSeconds: 5

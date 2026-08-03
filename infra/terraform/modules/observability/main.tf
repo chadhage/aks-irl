@@ -38,7 +38,14 @@ resource "azurerm_dashboard_grafana" "this" {
   }
 }
 
+resource "azurerm_role_assignment" "grafana_monitor_reader" {
+  scope                = azurerm_monitor_workspace.this.id
+  role_definition_name = "Monitoring Data Reader"
+  principal_id         = azurerm_dashboard_grafana.this.identity[0].principal_id
+}
+
 output "log_analytics_workspace_id" { value = azurerm_log_analytics_workspace.this.id }
 output "monitor_workspace_id" { value = azurerm_monitor_workspace.this.id }
 output "grafana_id" { value = azurerm_dashboard_grafana.this.id }
+output "grafana_principal_id" { value = azurerm_dashboard_grafana.this.identity[0].principal_id }
 output "grafana_endpoint" { value = azurerm_dashboard_grafana.this.endpoint }

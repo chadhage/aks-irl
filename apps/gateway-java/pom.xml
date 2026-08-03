@@ -13,6 +13,8 @@
     <netty.version>4.1.114.Final</netty.version>
     <prometheus.version>0.16.0</prometheus.version>
     <postgres.version>42.7.4</postgres.version>
+    <hikari.version>6.2.1</hikari.version>
+    <azure.identity.version>1.15.3</azure.identity.version>
   </properties>
   <dependencies>
     <dependency>
@@ -34,6 +36,16 @@
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
       <version>${postgres.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.zaxxer</groupId>
+      <artifactId>HikariCP</artifactId>
+      <version>${hikari.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.azure</groupId>
+      <artifactId>azure-identity</artifactId>
+      <version>${azure.identity.version}</version>
     </dependency>
   </dependencies>
   <build>

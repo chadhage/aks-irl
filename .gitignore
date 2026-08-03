@@ -6,6 +6,8 @@
 **/backend.hcl
 **/tfplan
 node_modules/
+**/target/
+build/
 __pycache__/
 .DS_Store
 .vscode/

@@ -72,7 +72,7 @@ resource "azurerm_kubernetes_cluster" "this" {
   network_profile {
     network_plugin      = "azure"
     network_plugin_mode = "overlay"
-    network_dataplane   = "cilium"
+    network_data_plane  = "cilium"
     network_policy      = "cilium"
     load_balancer_sku   = "standard"
     outbound_type       = "loadBalancer"
@@ -105,7 +105,7 @@ resource "azurerm_kubernetes_cluster" "this" {
     utc_offset  = "+00:00"
   }
 
-  auto_upgrade_channel    = "stable"
+  automatic_upgrade_channel = "stable"
   node_os_upgrade_channel = "NodeImage"
 }
 
@@ -161,15 +161,21 @@ resource "azurerm_role_assignment" "acr_pull" {
   principal_id         = azurerm_kubernetes_cluster.this.kubelet_identity[0].object_id
 }
 
-# Grant Grafana access to the Monitor workspace.
-# NOTE: Grafana identity is created in the observability module; in production
-# you'd pass its principal_id through here. For workshop simplicity we leave
-# this as a documented stretch step (Module 02) rather than wire it across
-# modules and risk a circular dependency.
+resource "azurerm_monitor_diagnostic_setting" "control_plane" {
+  name                       = "aks-control-plane"
+  target_resource_id         = azurerm_kubernetes_cluster.this.id
+  log_analytics_workspace_id = var.log_analytics_workspace_id
+
+  enabled_log { category = "kube-apiserver" }
+  enabled_log { category = "kube-audit-admin" }
+  enabled_log { category = "kube-controller-manager" }
+  enabled_log { category = "kube-scheduler" }
+  enabled_log { category = "cluster-autoscaler" }
+
+  enabled_metric { category = "AllMetrics" }
+}
 
 output "cluster_name" { value = azurerm_kubernetes_cluster.this.name }
 output "cluster_id" { value = azurerm_kubernetes_cluster.this.id }
 output "oidc_issuer_url" { value = azurerm_kubernetes_cluster.this.oidc_issuer_url }
 output "kubelet_object_id" { value = azurerm_kubernetes_cluster.this.kubelet_identity[0].object_id }
-# Placeholder; populated post-install (Argo CD bootstraps Istio gateway service of LB type)
-output "istio_ingress_fqdn" { value = "${azurerm_kubernetes_cluster.this.name}.placeholder" }

@@ -41,6 +41,7 @@ jobs:
       - name: ACR login
         run: az acr login -n $ACR_NAME
       - name: Build & push
+        id: image
         run: |
           IMG="$ACR_NAME.azurecr.io/${{ matrix.app }}"
           SHA="${GITHUB_SHA::7}"
@@ -50,13 +51,14 @@ jobs:
             docker tag  $IMG:$SHA $IMG:dev-latest
             docker push $IMG:dev-latest
           fi
+          echo "ref=$IMG:$SHA" >> "$GITHUB_OUTPUT"
       - name: Trivy scan
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: ${{ env.ACR_NAME }}.azurecr.io/${{ matrix.app }}:${{ github.sha }}
+          image-ref: ${{ steps.image.outputs.ref }}
           format: table
           severity: HIGH,CRITICAL
-          exit-code: '0'   # don't block during workshop; flip to '1' to enforce
+          exit-code: '1'
 
   bump-canary:
     needs: build
@@ -64,7 +66,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0, token: ${{ secrets.GITHUB_TOKEN }} }
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Bump canary image tags
         run: |
           SHA="${GITHUB_SHA::7}"
@@ -100,7 +104,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
+        with:
+          fetch-depth: 0
       - name: Open prod-bump PR
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

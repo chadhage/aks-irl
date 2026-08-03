@@ -17,6 +17,7 @@ check "kubectl >= 1.30"          "kubectl version --client | head -1 | grep -E '
 check "kubelogin"                "kubelogin --version"
 check "helm >= 3.15"             "helm version --short | grep -E 'v3\\.(1[5-9]|[2-9])'"
 check "docker or podman"         "docker version || podman version"
+check "Python >= 3.10"           "python3 -c 'import sys; raise SystemExit(sys.version_info < (3, 10))'"
 check "git"                      "git --version"
 check "jq"                       "jq --version"
 check "yq"                       "yq --version"

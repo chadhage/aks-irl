@@ -1,0 +1,91 @@
+name: validate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+      - name: Format
+        run: terraform -chdir=infra/terraform/envs/lab fmt -check -recursive
+      - name: Initialize without backend
+        run: terraform -chdir=infra/terraform/envs/lab init -backend=false
+      - name: Validate
+        run: terraform -chdir=infra/terraform/envs/lab validate
+
+  applications:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Test Java gateway
+        run: mvn --batch-mode --file apps/gateway-java/pom.xml test
+      - name: Test load generator
+        run: python -m unittest discover -s tools/load-generator -p "test_*.py"
+      - name: Compile evidence checker
+        run: python -m py_compile tools/evidence/check_evidence.py
+      - name: Install C++ dependencies
+        run: sudo apt-get update && sudo apt-get install -y libmicrohttpd-dev libpq-dev pkg-config
+      - name: Configure C++ parser
+        run: cmake -S apps/parser-cpp -B build/parser-cpp
+      - name: Build C++ parser
+        run: cmake --build build/parser-cpp
+
+  manifests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-kubectl@v4
+        with:
+          version: v1.30.10
+      - name: Install kubeconform
+        run: |
+          curl -fsSLo kubeconform.tar.gz https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz
+          tar -xzf kubeconform.tar.gz
+          sudo install kubeconform /usr/local/bin/kubeconform
+      - name: Render and validate overlays
+        run: |
+          for overlay in dev canary prod; do
+            kubectl kustomize "k8s/overlays/$overlay" > "$overlay.yaml"
+            kubeconform -strict -summary -ignore-missing-schemas "$overlay.yaml"
+          done
+
+  repository:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install validation tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+          curl -fsSLo actionlint.tar.gz https://github.com/rhysd/actionlint/releases/download/v1.7.7/actionlint_1.7.7_linux_x86_64.tar.gz
+          tar -xzf actionlint.tar.gz
+          sudo install actionlint /usr/local/bin/actionlint
+      - name: Validate workflows
+        run: actionlint
+      - name: Validate shell scripts
+        run: shellcheck scripts/*.sh
+      - name: Reject unresolved production placeholders
+        run: |
+          if grep -RInE 'REPLACE_PROD_TAG|\.placeholder' k8s/overlays/prod infra/terraform; then
+            echo "Production artifacts contain unresolved placeholders"
+            exit 1
+          fi

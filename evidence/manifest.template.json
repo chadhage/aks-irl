@@ -1,0 +1,29 @@
+{
+  "run_id": "YYYY-MM-DD-run-N",
+  "operator": "name-or-alias",
+  "author_run": true,
+  "environment": {
+    "os": "Windows 11",
+    "subscription_isolated": true,
+    "started_at_utc": "YYYY-MM-DDTHH:MM:SSZ",
+    "completed_at_utc": "YYYY-MM-DDTHH:MM:SSZ"
+  },
+  "modules": {
+    "M00": { "status": "PENDING", "artifacts": [] },
+    "M01": { "status": "PENDING", "artifacts": [] },
+    "M02": { "status": "PENDING", "artifacts": [] },
+    "M03": { "status": "PENDING", "artifacts": [] },
+    "M04": { "status": "PENDING", "artifacts": [] },
+    "M05": { "status": "PENDING", "artifacts": [] },
+    "M06": { "status": "PENDING", "artifacts": [] },
+    "M07": { "status": "PENDING", "artifacts": [] },
+    "M08": { "status": "PENDING", "artifacts": [] }
+  },
+  "cleanup": {
+    "terraform_destroy_exit_code": null,
+    "remaining_billable_resources": null,
+    "artifact": null
+  },
+  "estimated_cost_usd": null,
+  "undocumented_interventions": []
+}

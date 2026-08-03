@@ -4,3 +4,7 @@ github_repo     = "your-user/aks-irl"
 admin_object_ids = [
   # "<your Entra object id>",
 ]
+postgres_administrator_object_id   = "00000000-0000-0000-0000-000000000000"
+postgres_administrator_principal_name = "aks-workshop-admins"
+# Group, ServicePrincipal, or User
+postgres_administrator_principal_type = "Group"

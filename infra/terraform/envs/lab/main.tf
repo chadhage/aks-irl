@@ -118,6 +118,25 @@ module "keyvault_secondary" {
   admin_object_ids    = var.admin_object_ids
 }
 
+# ---- PostgreSQL Flexible Server ---------------------------------------------
+
+module "postgresql" {
+  source                        = "../../modules/postgresql"
+  naming                        = local.naming
+  tags                          = local.tags
+  primary_resource_group_name   = azurerm_resource_group.primary.name
+  primary_location              = var.primary_region
+  primary_subnet_id             = module.network_spoke_primary.postgres_subnet_id
+  primary_vnet_id               = module.network_spoke_primary.vnet_id
+  secondary_resource_group_name = azurerm_resource_group.secondary.name
+  secondary_location            = var.secondary_region
+  secondary_subnet_id           = module.network_spoke_secondary.postgres_subnet_id
+  secondary_vnet_id             = module.network_spoke_secondary.vnet_id
+  administrator_object_id       = var.postgres_administrator_object_id
+  administrator_principal_name  = var.postgres_administrator_principal_name
+  administrator_principal_type  = var.postgres_administrator_principal_type
+}
+
 # ---- AKS clusters ------------------------------------------------------------
 
 module "aks_primary" {
@@ -160,6 +179,71 @@ module "aks_secondary" {
   enable_spot_pool           = false
 }
 
+# ---- Gateway Workload Identity ----------------------------------------------
+
+resource "azurerm_user_assigned_identity" "gateway" {
+  name                = "${local.naming.program}-${local.naming.lab}-id-gateway-${local.naming.suffix}"
+  resource_group_name = azurerm_resource_group.primary.name
+  location            = var.primary_region
+  tags                = local.tags
+}
+
+resource "azurerm_federated_identity_credential" "gateway_primary" {
+  for_each = toset(["messaging-dev", "messaging-canary", "messaging-prod"])
+
+  name      = "gateway-primary-${trimprefix(each.value, "messaging-")}"
+  parent_id = azurerm_user_assigned_identity.gateway.id
+  issuer    = module.aks_primary.oidc_issuer_url
+  audience  = ["api://AzureADTokenExchange"]
+  subject   = "system:serviceaccount:${each.value}:gateway-java"
+}
+
+resource "azurerm_federated_identity_credential" "gateway_secondary" {
+  for_each = toset(["messaging-dev", "messaging-canary", "messaging-prod"])
+
+  name      = "gateway-secondary-${trimprefix(each.value, "messaging-")}"
+  parent_id = azurerm_user_assigned_identity.gateway.id
+  issuer    = module.aks_secondary.oidc_issuer_url
+  audience  = ["api://AzureADTokenExchange"]
+  subject   = "system:serviceaccount:${each.value}:gateway-java"
+}
+
+resource "azurerm_role_assignment" "gateway_keyvault_primary" {
+  scope                = module.keyvault_primary.id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = azurerm_user_assigned_identity.gateway.principal_id
+}
+
+resource "azurerm_role_assignment" "gateway_keyvault_secondary" {
+  scope                = module.keyvault_secondary.id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = azurerm_user_assigned_identity.gateway.principal_id
+}
+
+# ---- Regional ingress addresses ---------------------------------------------
+
+resource "azurerm_public_ip" "ingress_primary" {
+  name                = "${local.naming.program}-${local.naming.lab}-pip-ingress-eus2-${local.naming.suffix}"
+  resource_group_name = azurerm_resource_group.primary.name
+  location            = var.primary_region
+  allocation_method   = "Static"
+  sku                 = "Standard"
+  zones               = ["1", "2", "3"]
+  domain_name_label   = "${local.naming.program}-${local.naming.lab}-ingress-eus2-${local.naming.suffix}"
+  tags                = local.tags
+}
+
+resource "azurerm_public_ip" "ingress_secondary" {
+  name                = "${local.naming.program}-${local.naming.lab}-pip-ingress-wus3-${local.naming.suffix}"
+  resource_group_name = azurerm_resource_group.secondary.name
+  location            = var.secondary_region
+  allocation_method   = "Static"
+  sku                 = "Standard"
+  zones               = ["1", "2", "3"]
+  domain_name_label   = "${local.naming.program}-${local.naming.lab}-ingress-wus3-${local.naming.suffix}"
+  tags                = local.tags
+}
+
 # ---- Front Door --------------------------------------------------------------
 
 module "front_door" {
@@ -167,6 +251,6 @@ module "front_door" {
   resource_group_name   = azurerm_resource_group.primary.name
   naming                = local.naming
   tags                  = local.tags
-  primary_origin_host   = module.aks_primary.istio_ingress_fqdn
-  secondary_origin_host = module.aks_secondary.istio_ingress_fqdn
+  primary_origin_host   = azurerm_public_ip.ingress_primary.fqdn
+  secondary_origin_host = azurerm_public_ip.ingress_secondary.fqdn
 }

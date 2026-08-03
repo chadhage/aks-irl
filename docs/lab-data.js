@@ -489,7 +489,7 @@ const LAB_DATA = {
             "Commit, push, sync.",
             "Run a synthetic loop and check the parser-version distribution.",
           ],
-          code: ["for i in {1..50}; do ./scripts/smoke.sh tcp $NLB_IP 4561 1 --print-parser-version; done | sort | uniq -c"],
+          code: ["./scripts/smoke.sh tcp $NLB_IP 4561 50 --duration 10s --json-output evidence/parser-split.json"],
           validation: "Observed split is approximately 45/5 across 50 calls (Istio is statistical, not deterministic).",
           postcheck: [
             "You see a 50/0 split instead of 45/5. List three possible causes (sidecar, DR, endpoint readiness).",
