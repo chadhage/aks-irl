@@ -156,8 +156,7 @@ code { font-family: var(--mono); font-size: 0.88em; background: var(--surface-2)
 
 /* ---------- Architecture ---------- */
 .diagram-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; overflow-x: auto; box-shadow: var(--shadow); }
-.architecture-view-head { margin: 3rem 0 1rem; }
-.section-head + .architecture-view-head { margin-top: 0; }
+.architecture-view-head { margin: 3rem auto 1rem; }
 .architecture-view-head span { color: var(--brand); font: 600 0.72rem var(--mono); text-transform: uppercase; }
 .architecture-view-head h3 { margin-top: 0.35rem; font-size: 1.22rem; }
 .architecture-view-head p { max-width: 72ch; margin: 0.45rem 0 0; color: var(--text-dim); font-size: 0.9rem; }
@@ -242,6 +241,14 @@ code { font-family: var(--mono); font-size: 0.88em; background: var(--surface-2)
 .move:hover { border-color: color-mix(in srgb, var(--brand) 45%, var(--border)); transform: translateY(-3px); }
 .move h4 { font-size: 1rem; margin-bottom: 0.55rem; color: var(--text); }
 .move p { color: var(--text-dim); font-size: 0.9rem; margin: 0; }
+.architecture-references { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr); gap: 2rem; align-items: start; margin-top: 1.5rem; padding: 1.4rem 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.reference-label { display: block; margin-bottom: 0.4rem; color: var(--brand-2); font: 0.7rem var(--mono); text-transform: uppercase; }
+.architecture-references h4 { margin-bottom: 0.55rem; font-size: 1rem; }
+.architecture-references p { max-width: 68ch; margin: 0; color: var(--text-dim); font-size: 0.88rem; }
+.reference-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.55rem 1rem; }
+.reference-links a { display: flex; justify-content: space-between; gap: 0.75rem; padding: 0.45rem 0; color: var(--text); border-bottom: 1px solid var(--border); font-size: 0.8rem; font-weight: 600; }
+.reference-links a:hover { color: var(--brand); border-color: var(--brand); }
+.reference-links span { color: var(--brand); }
 
 /* ---------- Modules ---------- */
 .module-filter { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 1.8rem; }
@@ -321,6 +328,7 @@ code { font-family: var(--mono); font-size: 0.88em; background: var(--surface-2)
   .legacy-target { grid-template-columns: 1fr; }
   .lt-arrow { transform: rotate(90deg); }
   .moves-grid { grid-template-columns: repeat(2, 1fr); }
+  .architecture-references { grid-template-columns: 1fr; gap: 1.2rem; }
   .modules-grid { grid-template-columns: repeat(2, 1fr); }
   .delivery-grid { grid-template-columns: 1fr; }
   .roles-grid { grid-template-columns: repeat(2, 1fr); }
@@ -336,6 +344,7 @@ code { font-family: var(--mono); font-size: 0.88em; background: var(--surface-2)
   .hero { padding: 3.5rem 1.25rem 3rem; }
   .hero-stats { grid-template-columns: 1fr 1fr; gap: 0.75rem; }
   .moves-grid, .modules-grid, .roles-grid { grid-template-columns: 1fr; }
+  .reference-links { grid-template-columns: 1fr; }
   .section { padding: 3.5rem 1.25rem; }
   .success-quote { padding: 1.3rem 1.4rem; font-size: 1rem; }
   .lab-layout { padding: 1rem 1rem 3rem; }

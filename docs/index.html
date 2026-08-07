@@ -508,6 +508,20 @@ flowchart TB
           <div class="move"><h4>A/B by parser, not gateway</h4><p>The gateway holds socket state; the parser is stateless per message. A/B <code>parser-cpp:v1</code> vs <code>v2</code> by Istio header match — sockets never move.</p></div>
           <div class="move"><h4>Rings with a human gate</h4><p>dev → canary → prod, with canary soak and a required PR review plus a manual Argo sync before prod. Every change is traceable.</p></div>
         </div>
+        <aside class="architecture-references" aria-labelledby="architecture-references-title">
+          <div>
+            <span class="reference-label">Official Microsoft guidance</span>
+            <h4 id="architecture-references-title">Well-Architected workloads on an enterprise-scale landing zone</h4>
+            <p>Assess workload trade-offs with the Azure Well-Architected Framework, then place the AKS application landing zone within the governance, identity, connectivity, and management guardrails of the platform landing zone.</p>
+          </div>
+          <nav class="reference-links" aria-label="Official Microsoft architecture references">
+            <a href="https://learn.microsoft.com/azure/well-architected/what-is-well-architected-framework" target="_blank" rel="noopener">Azure Well-Architected Framework <span aria-hidden="true">↗</span></a>
+            <a href="https://learn.microsoft.com/azure/well-architected/service-guides/azure-kubernetes-service" target="_blank" rel="noopener">AKS Well-Architected service guide <span aria-hidden="true">↗</span></a>
+            <a href="https://learn.microsoft.com/azure/cloud-adoption-framework/ready/landing-zone/" target="_blank" rel="noopener">Azure landing zones <span aria-hidden="true">↗</span></a>
+            <a href="https://learn.microsoft.com/azure/cloud-adoption-framework/ready/landing-zone/design-areas" target="_blank" rel="noopener">Landing-zone design areas <span aria-hidden="true">↗</span></a>
+            <a href="https://learn.microsoft.com/azure/architecture/reference-architectures/containers/aks-start-here" target="_blank" rel="noopener">AKS design and operations <span aria-hidden="true">↗</span></a>
+          </nav>
+        </aside>
       </div>
     </section>
 
