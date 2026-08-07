@@ -156,7 +156,85 @@ code { font-family: var(--mono); font-size: 0.88em; background: var(--surface-2)
 
 /* ---------- Architecture ---------- */
 .diagram-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; overflow-x: auto; box-shadow: var(--shadow); }
-.mermaid { display: flex; justify-content: center; min-height: 200px; }
+.architecture-view-head { margin: 3rem 0 1rem; }
+.section-head + .architecture-view-head { margin-top: 0; }
+.architecture-view-head span { color: var(--brand); font: 600 0.72rem var(--mono); text-transform: uppercase; }
+.architecture-view-head h3 { margin-top: 0.35rem; font-size: 1.22rem; }
+.architecture-view-head p { max-width: 72ch; margin: 0.45rem 0 0; color: var(--text-dim); font-size: 0.9rem; }
+.diagram-wrap-mermaid { min-height: 280px; }
+.mermaid { display: flex; justify-content: center; min-width: 900px; min-height: 240px; }
+.diagram-note { min-width: 900px; max-width: 110ch; margin: 1rem auto 0; padding-top: 0.9rem; border-top: 1px solid var(--border); color: var(--text-dim); font-size: 0.78rem; text-align: center; }
+.azure-architecture { min-width: 900px; margin: 0; }
+.traffic-sources, .ingress-services { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.2rem; max-width: 660px; margin: 0 auto; }
+.external-node, .azure-node { min-width: 0; }
+.external-node { display: grid; grid-template-columns: 52px 1fr; column-gap: 0.85rem; align-items: center; padding: 0.85rem 1rem; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2); }
+.external-node strong, .external-node small { grid-column: 2; }
+.external-node small, .azure-node small { color: var(--text-dim); line-height: 1.35; }
+.external-icon { grid-row: 1 / 3; display: grid; place-items: center; width: 52px; height: 52px; border: 1px solid var(--border); border-radius: 50%; color: var(--brand); font-family: var(--mono); font-size: 0.68rem; font-weight: 700; }
+.flow-connector { display: grid; place-items: center; height: 58px; position: relative; color: var(--text-mute); font: 0.72rem var(--mono); }
+.flow-connector::before { content: ""; position: absolute; top: 8px; bottom: 8px; width: 2px; background: var(--brand); }
+.flow-connector::after { content: ""; position: absolute; bottom: 5px; border: 6px solid transparent; border-top-color: var(--brand); }
+.flow-connector span { position: relative; z-index: 1; background: var(--surface); padding: 0 0.6rem; }
+.azure-node { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.25rem; min-height: 112px; padding: 0.9rem; text-align: center; border: 1px solid color-mix(in srgb, var(--brand) 35%, var(--border)); border-radius: var(--radius-sm); background: color-mix(in srgb, var(--brand) 5%, var(--surface-2)); transition: border-color 0.15s, transform 0.15s; }
+.azure-node:hover { border-color: var(--brand); transform: translateY(-2px); }
+.azure-node:focus-visible { outline: 3px solid color-mix(in srgb, var(--brand) 60%, transparent); outline-offset: 3px; }
+.azure-node img { display: block; width: 44px; height: 44px; object-fit: contain; margin-bottom: 0.2rem; }
+.azure-node strong { font-size: 0.88rem; line-height: 1.25; }
+.azure-node small { display: block; font-size: 0.72rem; }
+.regional-routes { display: grid; grid-template-columns: 1fr 1fr; max-width: 760px; height: 70px; margin: 0 auto; color: var(--text-mute); font: 0.7rem var(--mono); }
+.regional-routes span { display: grid; place-items: end center; position: relative; padding-bottom: 8px; }
+.regional-routes span::before { content: ""; position: absolute; top: 8px; bottom: 22px; width: 2px; background: var(--brand-2); }
+.regional-routes span::after { content: ""; position: absolute; bottom: 17px; border: 6px solid transparent; border-top-color: var(--brand-2); }
+.regional-routes span:last-child::before { background: repeating-linear-gradient(to bottom, var(--text-mute) 0 5px, transparent 5px 9px); }
+.regional-routes span:last-child::after { border-top-color: var(--text-mute); }
+.region-grid { display: grid; grid-template-columns: minmax(0, 1fr) 76px minmax(0, 1fr); align-items: stretch; gap: 0; }
+.region { border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-alt); }
+.region-primary { border-color: color-mix(in srgb, var(--brand-2) 45%, var(--border)); }
+.region > header { display: flex; align-items: center; gap: 0.7rem; padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--border); background: var(--surface-2); }
+.region > header span { padding: 0.15rem 0.45rem; border-radius: 4px; background: var(--brand-2); color: #04251a; font: 700 0.65rem var(--mono); text-transform: uppercase; }
+.region-passive > header span { background: var(--text-mute); color: var(--bg); }
+.region > header strong { font-size: 0.9rem; }
+.region-services { padding: 1rem; }
+.azure-node-featured { min-height: 128px; }
+.workload-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; margin: 0.75rem 0; }
+.workload-list span { min-width: 0; padding: 0.55rem 0.35rem; text-align: center; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); }
+.workload-list code { display: block; overflow-wrap: anywhere; }
+.workload-list small { display: block; margin-top: 0.25rem; color: var(--text-mute); font-size: 0.65rem; }
+.standby-note { display: grid; place-items: center; min-height: 61px; margin: 0.75rem 0; border: 1px dashed var(--border); border-radius: 6px; color: var(--text-mute); font: 0.72rem var(--mono); }
+.region-dependencies { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.65rem; }
+.azure-node-compact { min-height: 105px; padding: 0.7rem; }
+.azure-node-compact img { width: 36px; height: 36px; }
+.replication-path { display: grid; place-items: end center; position: relative; overflow: hidden; padding-bottom: 3.5rem; color: var(--text-mute); font: 0.64rem var(--mono); text-align: center; }
+.replication-path::before { content: ""; position: absolute; top: 74%; left: 7px; right: 7px; border-top: 2px dashed var(--warn); }
+.replication-path::after { content: ""; position: absolute; top: calc(74% - 5px); right: 0; border: 6px solid transparent; border-left-color: var(--warn); }
+.replication-path span { position: relative; z-index: 1; background: var(--surface); padding: 0.25rem; }
+.shared-services { display: grid; grid-template-columns: auto repeat(3, minmax(0, 1fr)); gap: 0.75rem; align-items: center; margin-top: 1rem; padding: 1rem; border: 1px dashed var(--border); border-radius: var(--radius-sm); }
+.shared-label { color: var(--text-mute); font: 0.7rem var(--mono); text-transform: uppercase; writing-mode: vertical-rl; transform: rotate(180deg); }
+.azure-node-horizontal { min-height: 78px; flex-direction: row; justify-content: flex-start; gap: 0.75rem; text-align: left; }
+.azure-node-horizontal img { flex: 0 0 auto; margin: 0; }
+.azure-node-horizontal span { min-width: 0; }
+.azure-architecture figcaption { margin-top: 1rem; color: var(--text-mute); font-size: 0.75rem; text-align: center; }
+.azure-architecture figcaption a { color: var(--brand); text-decoration: underline; text-underline-offset: 3px; }
+.active-route { display: grid; grid-template-columns: repeat(2, 1fr); height: 70px; color: var(--text-mute); font: 0.7rem var(--mono); }
+.active-route span { display: grid; place-items: end center; position: relative; padding-bottom: 8px; }
+.active-route span::before { content: ""; position: absolute; top: 8px; bottom: 22px; width: 2px; background: var(--brand-2); }
+.active-route span::after { content: ""; position: absolute; bottom: 17px; border: 6px solid transparent; border-top-color: var(--brand-2); }
+.active-region-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.region-active { border-color: color-mix(in srgb, var(--brand-2) 55%, var(--border)); }
+.region-active > header span { background: var(--brand-2); }
+.active-ingress { min-height: 76px; margin-bottom: 0.7rem; }
+.partition-owner { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin: 0.7rem 0; padding: 0.55rem 0.7rem; border: 1px solid color-mix(in srgb, var(--warn) 45%, var(--border)); border-radius: 6px; background: color-mix(in srgb, var(--warn) 7%, var(--surface)); font-size: 0.72rem; }
+.partition-owner strong { color: var(--warn); }
+.partition-owner span { color: var(--text-dim); font-family: var(--mono); }
+.active-data-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.6rem; }
+.replica-node { border-style: dashed; }
+.cross-region-replication { display: grid; grid-template-columns: 1fr auto 1fr; gap: 0.8rem; align-items: center; margin: 1rem 0; color: var(--text-mute); font: 0.67rem var(--mono); text-align: center; }
+.cross-region-replication::before, .cross-region-replication::after { content: ""; display: none; }
+.cross-region-replication strong { color: var(--warn); font-size: 0.7rem; }
+.cross-region-replication span { padding: 0.4rem 0.7rem; border-top: 2px dashed var(--warn); border-bottom: 2px dashed var(--warn); }
+.consistency-guardrail { min-height: 78px; display: flex; flex-direction: column; justify-content: center; padding: 0.75rem 0.9rem; border: 1px solid color-mix(in srgb, var(--warn) 40%, var(--border)); border-radius: var(--radius-sm); background: color-mix(in srgb, var(--warn) 6%, var(--surface-2)); }
+.consistency-guardrail strong { font-size: 0.82rem; }
+.consistency-guardrail small { margin-top: 0.2rem; color: var(--text-dim); font-size: 0.7rem; line-height: 1.35; }
 .moves { margin-top: 3rem; }
 .moves h3 { font-size: 1.25rem; margin-bottom: 1.4rem; }
 .moves-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.1rem; }

@@ -132,7 +132,12 @@
           Hub-spoke across two regions · private zone-redundant AKS · Istio mesh · GitOps rings · managed observability.
         </p>
       </div>
-      <div class="diagram-wrap">
+      <div class="architecture-view-head">
+        <span>01 · Logical</span>
+        <h3>Cloud-agnostic system flow</h3>
+        <p>Use this view to reason about responsibilities, dependencies, and failover paths independently of Azure resource names.</p>
+      </div>
+      <div class="diagram-wrap diagram-wrap-mermaid">
         <pre class="mermaid">
 flowchart LR
   clients([Client endpoints<br/>partner systems / devices / services]):::ext
@@ -178,6 +183,320 @@ flowchart LR
   classDef data fill:#3b2f0b,stroke:#fbbf24,color:#fef3c7;
   classDef obs fill:#3a1d4d,stroke:#c084fc,color:#f3e8ff;
         </pre>
+      </div>
+
+      <div class="architecture-view-head">
+        <span>02 · Azure implementation</span>
+        <h3>Primary and passive regional deployment</h3>
+        <p>The workshop MVP mapped to concrete Azure services, with official service artwork linked to Azure Icons Explorer.</p>
+      </div>
+      <div class="diagram-wrap">
+        <figure class="azure-architecture" aria-labelledby="architecture-caption">
+          <div class="traffic-sources">
+            <div class="external-node">
+              <span class="external-icon" aria-hidden="true">TCP</span>
+              <strong>Client endpoints</strong>
+              <small>Partners · devices · services</small>
+            </div>
+            <div class="external-node">
+              <span class="external-icon" aria-hidden="true">HTTPS</span>
+              <strong>Ops team</strong>
+              <small>Browser clients</small>
+            </div>
+          </div>
+
+          <div class="flow-connector"><span>Public ingress</span></div>
+
+          <div class="ingress-services">
+            <a class="azure-node" href="https://www.azureicons.com/icons/load-balancers" target="_blank" rel="noopener">
+              <img src="https://www.azureicons.com/static/images/icons/Networking/svg/Load-Balancers.svg" alt="" />
+              <strong>Standard Load Balancer</strong>
+              <small>Persistent TCP · 4561 / 4562</small>
+            </a>
+            <a class="azure-node" href="https://www.azureicons.com/icons/front-door-and-cdn-profiles" target="_blank" rel="noopener">
+              <img src="https://www.azureicons.com/static/images/icons/Networking/svg/Front-Door-and-CDN-Profiles.svg" alt="" />
+              <strong>Azure Front Door + WAF</strong>
+              <small>HTTPS · ops console only</small>
+            </a>
+          </div>
+
+          <div class="regional-routes" aria-hidden="true">
+            <span>Primary traffic</span>
+            <span>Failover</span>
+          </div>
+
+          <div class="region-grid">
+            <section class="region region-primary" aria-label="East US 2 primary region">
+              <header><span>Primary</span><strong>East US 2 spoke</strong></header>
+              <div class="region-services">
+                <a class="azure-node azure-node-featured" href="https://www.azureicons.com/icons/kubernetes-services" target="_blank" rel="noopener">
+                  <img src="https://www.azureicons.com/static/images/icons/Compute/svg/Kubernetes-Services.svg" alt="" />
+                  <strong>AKS Standard</strong>
+                  <small>Private API · CNI Overlay · 3 zones · Istio</small>
+                </a>
+                <div class="workload-list" aria-label="AKS workloads">
+                  <span><code>gateway-java</code><small>StatefulSet</small></span>
+                  <span><code>parser-cpp</code><small>KEDA-scaled</small></span>
+                  <span><code>ops-console</code><small>HTTP only</small></span>
+                </div>
+                <div class="region-dependencies">
+                  <a class="azure-node azure-node-compact" href="https://www.azureicons.com/icons/azure-database-postgresql-server" target="_blank" rel="noopener">
+                    <img src="https://www.azureicons.com/static/images/icons/Databases/svg/Azure-Database-PostgreSQL-Server.svg" alt="" />
+                    <strong>PostgreSQL Flexible Server</strong>
+                    <small>Zone-redundant HA</small>
+                  </a>
+                  <a class="azure-node azure-node-compact" href="https://www.azureicons.com/icons/key-vaults" target="_blank" rel="noopener">
+                    <img src="https://www.azureicons.com/static/images/icons/Security/svg/Key-Vaults.svg" alt="" />
+                    <strong>Key Vault</strong>
+                    <small>Workload Identity</small>
+                  </a>
+                </div>
+              </div>
+            </section>
+
+            <div class="replication-path" aria-label="Asynchronous database replication"><span>Async replication</span></div>
+
+            <section class="region region-passive" aria-label="West US 3 passive region">
+              <header><span>Passive</span><strong>West US 3 spoke</strong></header>
+              <div class="region-services">
+                <a class="azure-node azure-node-featured" href="https://www.azureicons.com/icons/kubernetes-services" target="_blank" rel="noopener">
+                  <img src="https://www.azureicons.com/static/images/icons/Compute/svg/Kubernetes-Services.svg" alt="" />
+                  <strong>AKS Standard</strong>
+                  <small>Private API · CNI Overlay · 3 zones · Istio</small>
+                </a>
+                <div class="standby-note">Warm application standby</div>
+                <div class="region-dependencies">
+                  <a class="azure-node azure-node-compact" href="https://www.azureicons.com/icons/azure-database-postgresql-server" target="_blank" rel="noopener">
+                    <img src="https://www.azureicons.com/static/images/icons/Databases/svg/Azure-Database-PostgreSQL-Server.svg" alt="" />
+                    <strong>PostgreSQL replica</strong>
+                    <small>Geo-replicated</small>
+                  </a>
+                  <a class="azure-node azure-node-compact" href="https://www.azureicons.com/icons/key-vaults" target="_blank" rel="noopener">
+                    <img src="https://www.azureicons.com/static/images/icons/Security/svg/Key-Vaults.svg" alt="" />
+                    <strong>Key Vault</strong>
+                    <small>Regional secrets</small>
+                  </a>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <div class="shared-services" aria-label="Shared platform services">
+            <span class="shared-label">Shared platform</span>
+            <a class="azure-node azure-node-horizontal" href="https://www.azureicons.com/icons/virtual-networks" target="_blank" rel="noopener">
+              <img src="https://www.azureicons.com/static/images/icons/Networking/svg/Virtual-Networks.svg" alt="" />
+              <span><strong>Hub VNet</strong><small>Firewall · Bastion · spoke peering</small></span>
+            </a>
+            <a class="azure-node azure-node-horizontal" href="https://www.azureicons.com/icons/container-registries" target="_blank" rel="noopener">
+              <img src="https://www.azureicons.com/static/images/icons/Containers/svg/Container-Registries.svg" alt="" />
+              <span><strong>Azure Container Registry</strong><small>Zone-redundant · geo-replicated</small></span>
+            </a>
+            <a class="azure-node azure-node-horizontal" href="https://www.azureicons.com/icons/log-analytics-workspaces" target="_blank" rel="noopener">
+              <img src="https://www.azureicons.com/static/images/icons/Analytics/svg/Log-Analytics-Workspaces.svg" alt="" />
+              <span><strong>Azure Monitor</strong><small>Logs · Prometheus · Grafana</small></span>
+            </a>
+          </div>
+
+          <figcaption id="architecture-caption">
+            Solid paths carry primary traffic; dashed paths represent regional failover and asynchronous replication.
+            Azure service artwork is referenced from <a href="https://azureicons.com" target="_blank" rel="noopener">Azure Icons Explorer</a>.
+          </figcaption>
+        </figure>
+      </div>
+
+      <div class="architecture-view-head">
+        <span>03 · High availability</span>
+        <h3>Active-active regional deployment</h3>
+        <p>Both regions serve production traffic. Partner affinity and partition ownership prevent concurrent PostgreSQL writes to the same data partition.</p>
+      </div>
+      <div class="diagram-wrap diagram-wrap-mermaid">
+        <pre class="mermaid">
+flowchart TB
+  clients([Client endpoints])
+  ops([Ops team])
+  dns[Global DNS<br/>performance + health routing]
+  edge[Global HTTP edge + WAF]
+
+  clients -->|resolve regional TCP endpoint| dns
+  ops --> edge
+
+  subgraph east[Region A · ACTIVE]
+    direction TB
+    lb1[Layer 4 load balancer]
+    aks1[Managed Kubernetes · 3 zones<br/>gateway + parser + ops console]
+    owner1[Partition owner<br/>partners A–M]
+    pg1[(PostgreSQL writer A<br/>ZR HA)]
+    replica1[(Replica of writer B)]
+    lb1 -->|persistent TCP| aks1
+    aks1 --> owner1 --> pg1
+    aks1 -.read / recovery.-> replica1
+  end
+
+  subgraph west[Region B · ACTIVE]
+    direction TB
+    lb2[Layer 4 load balancer]
+    aks2[Managed Kubernetes · 3 zones<br/>gateway + parser + ops console]
+    owner2[Partition owner<br/>partners N–Z]
+    pg2[(PostgreSQL writer B<br/>ZR HA)]
+    replica2[(Replica of writer A)]
+    lb2 -->|persistent TCP| aks2
+    aks2 --> owner2 --> pg2
+    aks2 -.read / recovery.-> replica2
+  end
+
+  dns -->|healthy / nearest| lb1
+  dns -->|healthy / nearest| lb2
+  edge --> aks1
+  edge --> aks2
+  pg1 -.async replication.-> replica2
+  pg2 -.async replication.-> replica1
+
+  shared[Geo-replicated registry · regional secrets<br/>central observability · GitOps]
+  guardrails[Consistency guardrails<br/>stable partner partition · idempotency key · global message ID]
+  shared --> aks1
+  shared --> aks2
+  owner1 --- guardrails
+  owner2 --- guardrails
+        </pre>
+        <p class="diagram-note">
+          Raw TCP uses DNS health/performance routing because an HTTP edge does not proxy the socket protocol. During a regional outage,
+          clients reconnect to the surviving region; ownership is transferred only after the affected writer is fenced and its replica is promoted.
+        </p>
+      </div>
+
+      <div class="architecture-view-head">
+        <span>04 · Azure high availability</span>
+        <h3>Azure active-active regional deployment</h3>
+        <p>The active-active pattern mapped to Azure services, with both AKS regions serving traffic and each PostgreSQL writer owning a disjoint partner partition.</p>
+      </div>
+      <div class="diagram-wrap">
+        <figure class="azure-architecture azure-active-active" aria-labelledby="azure-active-active-caption">
+          <div class="traffic-sources">
+            <div class="external-node">
+              <span class="external-icon" aria-hidden="true">TCP</span>
+              <strong>Client endpoints</strong>
+              <small>Partners · devices · services</small>
+            </div>
+            <div class="external-node">
+              <span class="external-icon" aria-hidden="true">HTTPS</span>
+              <strong>Ops team</strong>
+              <small>Browser clients</small>
+            </div>
+          </div>
+
+          <div class="flow-connector"><span>Global routing</span></div>
+
+          <div class="ingress-services">
+            <a class="azure-node" href="https://www.azureicons.com/icons/traffic-manager-profiles" target="_blank" rel="noopener">
+              <img src="https://www.azureicons.com/static/images/icons/Networking/svg/Traffic-Manager-Profiles.svg" alt="" />
+              <strong>Azure Traffic Manager</strong>
+              <small>DNS performance routing · health probes</small>
+            </a>
+            <a class="azure-node" href="https://www.azureicons.com/icons/front-door-and-cdn-profiles" target="_blank" rel="noopener">
+              <img src="https://www.azureicons.com/static/images/icons/Networking/svg/Front-Door-and-CDN-Profiles.svg" alt="" />
+              <strong>Azure Front Door + WAF</strong>
+              <small>Global HTTPS · ops console only</small>
+            </a>
+          </div>
+
+          <div class="active-route"><span>Healthy / nearest</span><span>Healthy / nearest</span></div>
+
+          <div class="active-region-grid">
+            <section class="region region-active" aria-label="East US 2 active region">
+              <header><span>Active</span><strong>East US 2 spoke</strong></header>
+              <div class="region-services">
+                <a class="azure-node azure-node-horizontal active-ingress" href="https://www.azureicons.com/icons/load-balancers" target="_blank" rel="noopener">
+                  <img src="https://www.azureicons.com/static/images/icons/Networking/svg/Load-Balancers.svg" alt="" />
+                  <span><strong>Standard Load Balancer</strong><small>Persistent TCP ingress</small></span>
+                </a>
+                <a class="azure-node azure-node-featured" href="https://www.azureicons.com/icons/kubernetes-services" target="_blank" rel="noopener">
+                  <img src="https://www.azureicons.com/static/images/icons/Compute/svg/Kubernetes-Services.svg" alt="" />
+                  <strong>AKS Standard</strong>
+                  <small>3 zones · gateway · parser · ops console</small>
+                </a>
+                <div class="partition-owner"><strong>Writer ownership</strong><span>Partners A–M</span></div>
+                <div class="active-data-grid">
+                  <a class="azure-node azure-node-compact" href="https://www.azureicons.com/icons/azure-database-postgresql-server" target="_blank" rel="noopener">
+                    <img src="https://www.azureicons.com/static/images/icons/Databases/svg/Azure-Database-PostgreSQL-Server.svg" alt="" />
+                    <strong>PostgreSQL writer A</strong>
+                    <small>Zone-redundant HA</small>
+                  </a>
+                  <a class="azure-node azure-node-compact replica-node" href="https://www.azureicons.com/icons/azure-database-postgresql-server" target="_blank" rel="noopener">
+                    <img src="https://www.azureicons.com/static/images/icons/Databases/svg/Azure-Database-PostgreSQL-Server.svg" alt="" />
+                    <strong>Replica of writer B</strong>
+                    <small>Read · recovery</small>
+                  </a>
+                  <a class="azure-node azure-node-compact" href="https://www.azureicons.com/icons/key-vaults" target="_blank" rel="noopener">
+                    <img src="https://www.azureicons.com/static/images/icons/Security/svg/Key-Vaults.svg" alt="" />
+                    <strong>Key Vault</strong>
+                    <small>Workload Identity</small>
+                  </a>
+                </div>
+              </div>
+            </section>
+
+            <section class="region region-active" aria-label="West US 3 active region">
+              <header><span>Active</span><strong>West US 3 spoke</strong></header>
+              <div class="region-services">
+                <a class="azure-node azure-node-horizontal active-ingress" href="https://www.azureicons.com/icons/load-balancers" target="_blank" rel="noopener">
+                  <img src="https://www.azureicons.com/static/images/icons/Networking/svg/Load-Balancers.svg" alt="" />
+                  <span><strong>Standard Load Balancer</strong><small>Persistent TCP ingress</small></span>
+                </a>
+                <a class="azure-node azure-node-featured" href="https://www.azureicons.com/icons/kubernetes-services" target="_blank" rel="noopener">
+                  <img src="https://www.azureicons.com/static/images/icons/Compute/svg/Kubernetes-Services.svg" alt="" />
+                  <strong>AKS Standard</strong>
+                  <small>3 zones · gateway · parser · ops console</small>
+                </a>
+                <div class="partition-owner"><strong>Writer ownership</strong><span>Partners N–Z</span></div>
+                <div class="active-data-grid">
+                  <a class="azure-node azure-node-compact" href="https://www.azureicons.com/icons/azure-database-postgresql-server" target="_blank" rel="noopener">
+                    <img src="https://www.azureicons.com/static/images/icons/Databases/svg/Azure-Database-PostgreSQL-Server.svg" alt="" />
+                    <strong>PostgreSQL writer B</strong>
+                    <small>Zone-redundant HA</small>
+                  </a>
+                  <a class="azure-node azure-node-compact replica-node" href="https://www.azureicons.com/icons/azure-database-postgresql-server" target="_blank" rel="noopener">
+                    <img src="https://www.azureicons.com/static/images/icons/Databases/svg/Azure-Database-PostgreSQL-Server.svg" alt="" />
+                    <strong>Replica of writer A</strong>
+                    <small>Read · recovery</small>
+                  </a>
+                  <a class="azure-node azure-node-compact" href="https://www.azureicons.com/icons/key-vaults" target="_blank" rel="noopener">
+                    <img src="https://www.azureicons.com/static/images/icons/Security/svg/Key-Vaults.svg" alt="" />
+                    <strong>Key Vault</strong>
+                    <small>Workload Identity</small>
+                  </a>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <div class="cross-region-replication">
+            <span>Writer A → West replica</span>
+            <strong>Asynchronous cross-region replication</strong>
+            <span>East replica ← Writer B</span>
+          </div>
+
+          <div class="shared-services" aria-label="Shared Azure platform services">
+            <span class="shared-label">Shared platform</span>
+            <a class="azure-node azure-node-horizontal" href="https://www.azureicons.com/icons/container-registries" target="_blank" rel="noopener">
+              <img src="https://www.azureicons.com/static/images/icons/Containers/svg/Container-Registries.svg" alt="" />
+              <span><strong>Azure Container Registry</strong><small>Geo-replicated images</small></span>
+            </a>
+            <a class="azure-node azure-node-horizontal" href="https://www.azureicons.com/icons/log-analytics-workspaces" target="_blank" rel="noopener">
+              <img src="https://www.azureicons.com/static/images/icons/Analytics/svg/Log-Analytics-Workspaces.svg" alt="" />
+              <span><strong>Azure Monitor</strong><small>Logs · Prometheus · alerts</small></span>
+            </a>
+            <div class="consistency-guardrail">
+              <strong>Consistency guardrails</strong>
+              <small>Stable partner partition · idempotency key · global message ID</small>
+            </div>
+          </div>
+
+          <figcaption id="azure-active-active-caption">
+            Traffic Manager resolves raw TCP clients to a healthy regional Load Balancer; Front Door routes only HTTP traffic.
+            On failover, writer ownership moves after fencing and replica promotion. Azure service artwork is referenced from
+            <a href="https://azureicons.com" target="_blank" rel="noopener">Azure Icons Explorer</a>.
+          </figcaption>
+        </figure>
       </div>
       <div class="moves">
         <h3>Design moves the workshop defends</h3>
