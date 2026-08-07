@@ -38,50 +38,16 @@ Then introduce the principle: *each scenario isolates one failure domain. We are
 
 ## 6. Participant steps
 
-### Scenario A — Pod kill on the parser
-```bash
-./scripts/smoke.sh tcp $NLB 4561 200 --duration 300s &     # background load
-for i in {1..12}; do
-  POD=$(kubectl -n messaging-prod get pods -l app=parser-cpp -o jsonpath='{.items[0].metadata.name}')
-  kubectl -n messaging-prod delete pod $POD --wait=false
-  sleep 5
-done
-```
-Watch Grafana — RTT should not spike past SLO.
+Use the canonical one-action-at-a-time runbook in [LAB-GUIDE-ACTIVITIES.md](../../LAB-GUIDE-ACTIVITIES.md). Do not run a scenario as a command loop or continue past a failed confirmation.
 
-Then deliberately break the PDB to `minAvailable: 0` and repeat. Watch the SLO break. **Restore the PDB before you move on.**
+1. **M06.1:** establish the three-pane baseline and confirm it is stable for 60 seconds.
+2. **M06.2:** delete three parser pods individually, confirming recovery and SLO after each deletion.
+3. **M06.3:** remove the PDB only after the change gate; restore it from Git and pass the recovery gate.
+4. **M06.4:** inject the bad parser, start the rollback timer at the agreed error threshold, then reconcile both runtime and Git state.
+5. **M06.5:** trigger the zonal experiment only after proving surviving-zone capacity; cancel or complete it and restore zone spread.
+6. **M06.6:** attach one screenshot per scenario and commit the incident summary.
 
-### Scenario B — Bad parser rollout
-```bash
-docker build --build-arg APP_VERSION=bad -t $ACR/parser-cpp:bad apps/parser-cpp
-docker push $ACR/parser-cpp:bad
-# Hand-edit k8s/overlays/prod/kustomization.yaml to tag :bad (do NOT use the gated PR flow — this is intentional misuse)
-git add -A; git commit -m "drill: bad parser"; git push
-# Argo syncs. Grafana breaks. Time how long you take to roll back.
-```
-Target rollback: < 2 minutes. Record actual time.
-
-### Scenario C — Zone drain on the gateway (Chaos Studio)
-```bash
-az deployment group create -g $RG -f chaos/zone-failure-experiment.bicep \
-  -p clusterName=$AKS zone=2 region=eus2
-az rest --method post \
-  --uri "https://management.azure.com/subscriptions/$SUB/resourceGroups/$RG/providers/Microsoft.Chaos/experiments/skybridge-zone-failure/start?api-version=2024-01-01"
-```
-Watch:
-- `gateway_active_connections` drop by ~⅓ as zone-2 Pods are killed
-- A reconnect storm hits zones 1 + 3 — they should absorb it (HPA may scale them up)
-- Confirm ≥ 99 % of displaced sockets reconnect within 30 s
-
-### Write up one incident
-Pick the most interesting scenario. Write 5 lines into `modules/06-intrinsic-outage/incident-<scenario>.md`:
-1. What was the trigger?
-2. What did Grafana show?
-3. What protected the workload (or didn't)?
-4. What would you change?
-5. What SLO budget did you spend?
-
-Commit and push.
+The activity guide contains the exact confirmations, thresholds, and recovery evidence for each step. A scenario is incomplete until its **RECOVERY GATE** passes.
 
 ## 7. Validation
 

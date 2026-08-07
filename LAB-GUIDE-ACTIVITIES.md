@@ -7,13 +7,31 @@
 For every activity:
 
 1. **Pre-check (2 min).** Answer the questions in your head or in a notebook. Be honest about *Confident / Fuzzy / No idea*. This is your baseline.
-2. **Do the activity.** Steps and validation are inline. Stop the clock when validation passes.
+2. **Do the activity.** Complete only one numbered step at a time. Do not start the next step until you have completed its confirmation gate.
 3. **Post-check (2 min).** Answer again. If you cannot now say "Confident" on every post-check question, flag it to the TA before the room moves on.
 4. **Mark done** in the checklist at the bottom.
 
 Time estimates assume the trainer has already framed the module. If you are working solo, double them.
 
 The apps under [`apps/`](apps/) are **mocks** — see [LAB-GUIDE.md § The apps in this repo are mocks](LAB-GUIDE.md#the-apps-in-this-repo-are-mocks). The point is the architecture and operational moves, not the application logic.
+
+### Mandatory confirmation protocol
+
+Every numbered lab step uses this loop:
+
+1. Perform **only that step**.
+2. Compare the result with the **Confirm** statement immediately below it.
+3. Record the requested evidence in your workshop notes or evidence folder.
+4. Say or write **`CONFIRMED`**. If working in a cohort, show the evidence to your partner. If working solo, check the box yourself.
+5. Continue only after the confirmation passes. If it does not pass, stop and use the troubleshooting section or ask the TA. Do not compensate by skipping ahead.
+
+Use this evidence marker throughout the guide:
+
+```text
+[ ] CONFIRMED — <what you observed>
+```
+
+Steps marked **CHANGE GATE** alter shared Azure, GitOps, DNS, database, or production state. A partner or trainer must confirm the stated preconditions before you run the command. Steps marked **RECOVERY GATE** must pass before the activity is complete, even when the failure injection appeared to work.
 
 ---
 
@@ -67,6 +85,31 @@ The apps under [`apps/`](apps/) are **mocks** — see [LAB-GUIDE.md § The apps 
 
 ---
 
+### Activity 0.3 — Reconstruct the legacy-to-AKS request path (~15 min)
+
+**Pre-check**
+
+- Where does a client TCP connection terminate in the legacy system and in the AKS target?
+- Which target component is deliberately outside the TCP data path?
+- Which state can be recreated and which state must be replicated?
+
+**Do**
+
+1. Without looking at the target diagram, draw the legacy path from client to gateway, parser, and PostgreSQL. **Confirm:** mark every network and process boundary. `[ ] CONFIRMED`
+2. Draw the target path using the Azure and Kubernetes components named in [SCENARIO.md](SCENARIO.md). **Confirm:** Front Door appears only on the HTTP console path, not the raw TCP path. `[ ] CONFIRMED`
+3. Add one failure marker for a pod, node, zone, and region. **Confirm:** each marker names the later workshop activity that tests it. `[ ] CONFIRMED — 4/4 failure domains]`
+4. Compare your drawing with the README target architecture. **Confirm:** correct any missing trust, TLS, or persistence boundary in a different color. `[ ] CONFIRMED`
+
+**Validation** — your diagram traces one client message end to end and maps all four failure domains to M06 or M07.
+
+**Post-check**
+
+- Why does separating socket state from parser compute reduce disruption?
+- Why can Front Door protect the console but not carry this raw TCP protocol?
+- Which component determines RPO during a regional event?
+
+---
+
 ## Phase 1 — Plan and provision
 
 ### Activity M00.1 — Walk the Day-0 decisions (~15 min)
@@ -79,9 +122,10 @@ The apps under [`apps/`](apps/) are **mocks** — see [LAB-GUIDE.md § The apps 
 
 **Do**
 
-1. Open [modules/00-envisioning/README.md](modules/00-envisioning/README.md).
-2. Read the 9 Day-0 questions silently.
-3. As a cohort, the trainer drives discussion on each one. Take notes in the margin of your ADR draft.
+1. Open [modules/00-envisioning/README.md](modules/00-envisioning/README.md). **Confirm:** you can locate all 9 Day-0 questions. `[ ] CONFIRMED`
+2. Read question 1 and write your preferred choice plus one rejected alternative. **Confirm:** your choice includes one sentence about cost, risk, or reversibility. `[ ] CONFIRMED`
+3. Repeat step 2 for questions 2–9, one question at a time. Do not move to the next question until your partner can restate your reason. `[ ] CONFIRMED — 9/9 decisions discussed]`
+4. Pick the decision you are least certain about and defend it aloud without reading your notes. **Confirm:** your partner can name the tradeoff you accepted. `[ ] CONFIRMED`
 
 **Validation** — you can point to each of the 9 questions and state which way the cohort is leaning.
 
@@ -239,6 +283,31 @@ The apps under [`apps/`](apps/) are **mocks** — see [LAB-GUIDE.md § The apps 
 
 ---
 
+### Activity M01.5 — Prove the Terraform and GitOps ownership boundary (~10 min)
+
+**Pre-check**
+
+- Which tool owns Azure resources and which tool owns in-cluster workloads in this workshop?
+- What failure occurs when two reconcilers own the same field?
+- Should Terraform apply application Deployments in this design?
+
+**Do**
+
+1. Run `terraform state list` from the lab environment. **Confirm:** classify three Azure resources as platform-owned. `[ ] CONFIRMED`
+2. Run `kubectl kustomize k8s/overlays/dev` and list the rendered Kubernetes kinds. **Confirm:** classify three objects as GitOps-owned. `[ ] CONFIRMED`
+3. Search Terraform for `kubernetes_` resources and GitOps for Azure resource definitions. **Confirm:** record any ownership overlap; the expected core path has none. `[ ] CONFIRMED`
+4. Write one sentence defining the ownership rule in your ADR. **Confirm:** your partner can use it to decide where a new resource belongs. `[ ] CONFIRMED`
+
+**Validation** — your notes contain two owner lists and one unambiguous boundary rule.
+
+**Post-check**
+
+- Where should an AKS node pool change live?
+- Where should a parser replica-count change live?
+- Why is “Terraform creates the cluster; GitOps configures workloads” operationally useful?
+
+---
+
 ### Activity M02.1 — Reach the private API server (~15 min)
 
 **Pre-check**
@@ -296,18 +365,45 @@ The apps under [`apps/`](apps/) are **mocks** — see [LAB-GUIDE.md § The apps 
 
 **Do**
 
-1. Grant the UAMI `Key Vault Secrets User` on the lab Key Vault.
-2. Add the UAMI as an Entra admin (or grant `pg_read_all_data` style role) on the Postgres Flex server per scenario.
-3. Confirm `aks-istio-system` pods are `Running` (`kubectl -n aks-istio-system get pods`).
-4. Launch a throwaway pod with the federated SA and run `az login --identity` inside.
+1. Grant the UAMI `Key Vault Secrets User` on the lab Key Vault. **Confirm:** `az role assignment list --assignee <uami-client-id> --scope <key-vault-id> -o table` shows the role. `[ ] CONFIRMED`
+2. Create or grant the scenario's least-privilege Postgres role to the UAMI. **Confirm:** the role exists; do not continue with only the Entra token test. `[ ] CONFIRMED`
+3. Run `kubectl -n aks-istio-system get pods`. **Confirm:** every Istio control-plane pod is `Running` and ready. `[ ] CONFIRMED`
+4. Launch a throwaway pod with the federated ServiceAccount and run `az login --identity`. **Confirm:** the returned identity matches the UAMI client ID. `[ ] CONFIRMED`
+5. From that same pod, request a token for `https://ossrdbms-aad.database.windows.net` and use it as the password for a read-only `psql` connection. **Confirm:** `select current_user;` returns the expected workload database role and no password was stored in Kubernetes. `[ ] CONFIRMED`
 
-**Validation** — throwaway pod's `az login --identity` returns the UAMI's object ID; Istio control plane is healthy.
+**Validation** — Istio is healthy, the pod receives the intended UAMI, and a token-authenticated Postgres query succeeds.
 
 **Post-check**
 
 - Trace the chain of trust: pod → AKS OIDC issuer → Entra → UAMI → Azure resource. Where is each step verified?
 - If a pod returns `AADSTS70021`, what is the typical fix?
 - Why don't AKS add-on namespaces like `aks-istio-system` typically need Workload Identity themselves?
+
+---
+
+### Activity M02.4 — Prove a Key Vault CSI secret mount (~15 min)
+
+**Pre-check**
+
+- What does the Secrets Store CSI Driver mount into a pod?
+- Which identity retrieves the value from Key Vault?
+- Why should the secret value never be pasted into workshop evidence?
+
+**Do**
+
+1. Inspect the `SecretProviderClass` used by the gateway. **Confirm:** record the Key Vault name, tenant setting, and object names, but not object values. `[ ] CONFIRMED`
+2. Inspect the gateway ServiceAccount and pod template annotations. **Confirm:** the configured client ID matches the UAMI from M02.2. `[ ] CONFIRMED`
+3. Start or inspect a gateway pod using that class. **Confirm:** the pod reaches `Ready` and the CSI volume is mounted at the expected path. `[ ] CONFIRMED`
+4. List filenames and permissions in the mount without printing file contents. **Confirm:** expected filenames exist and are not world-readable. `[ ] CONFIRMED`
+5. Review CSI provider events and logs. **Confirm:** there are no authorization or object-not-found errors. `[ ] CONFIRMED`
+
+**Validation** — the pod has a healthy CSI mount obtained through Workload Identity, with no secret value exposed in notes or terminal output.
+
+**Post-check**
+
+- What would fail if `Key Vault Secrets User` were removed?
+- Why is a mounted CSI value different from a Kubernetes Secret synced into etcd?
+- How would rotation reach a long-running application?
 
 ---
 
@@ -394,11 +490,16 @@ The apps under [`apps/`](apps/) are **mocks** — see [LAB-GUIDE.md § The apps 
 
 **Do**
 
-1. `grep -rn REPLACE k8s gitops` to enumerate every placeholder.
-2. Substitute your ACR login server, UAMI client ID, Postgres FQDN, etc.
-3. Commit on a branch and push.
+1. Run `grep -rn REPLACE k8s gitops` and save the output. **Confirm:** you know the file and purpose of every match. `[ ] CONFIRMED`
+2. Replace only the ACR login server values. **Confirm:** every image reference begins with your ACR login server. `[ ] CONFIRMED`
+3. Replace only the UAMI client ID values. **Confirm:** the value matches `az identity show --query clientId -o tsv`. `[ ] CONFIRMED`
+4. Replace only the Postgres FQDN values. **Confirm:** the value matches the Terraform output and contains no username or password. `[ ] CONFIRMED`
+5. Replace the Git repository owner, repository URL, and remaining environment-specific values. **Confirm:** Argo points to your fork and the intended branch. `[ ] CONFIRMED`
+6. Run `grep -rn REPLACE k8s gitops`. **Confirm:** it returns no matches. `[ ] CONFIRMED`
+7. Render each overlay with `kubectl kustomize k8s/overlays/<name>` for `dev`, `canary`, and `prod`. **Confirm:** all three commands exit successfully. `[ ] CONFIRMED — 3/3 overlays]`
+8. Commit on a branch and push. **Confirm:** `git status --short` is clean and the branch exists in your fork. `[ ] CONFIRMED`
 
-**Validation** — `grep -rn REPLACE k8s gitops` returns nothing.
+**Validation** — no placeholders remain, all three overlays render, and the branch is pushed.
 
 **Post-check**
 
@@ -479,6 +580,57 @@ The apps under [`apps/`](apps/) are **mocks** — see [LAB-GUIDE.md § The apps 
 - Why is a stateless front tier preferred even when the *protocol* (sockets) is stateful?
 
 🎉 **Success #1 — MVP live.** Mark module M03 done in the checklist.
+
+---
+
+### Activity M03.8 — Prove gateway and parser failure isolation (~15 min)
+
+**Pre-check**
+
+- Which component owns long-lived client connections?
+- What should remain healthy if parser compute becomes unavailable?
+- Which user-visible operation should fail while parsing is unavailable?
+
+**Do**
+
+1. Start sustained sockets against the **dev** ring and record active connections plus message success. **Confirm:** both are at baseline. `[ ] CONFIRMED`
+2. **CHANGE GATE:** scale only the dev `parser-cpp` Deployment to zero using a temporary, non-Git change. **Confirm:** gateway pods and active socket metrics remain present. `[ ] CONFIRMED`
+3. Send a parse-dependent message. **Confirm:** message processing fails or retries while the TCP connection remains established; record both signals. `[ ] CONFIRMED`
+4. **RECOVERY GATE:** restore parser replicas by syncing the dev Argo application. **Confirm:** message success returns and Git remains the desired-state source. `[ ] CONFIRMED`
+
+**Validation** — you captured evidence that parser failure affects message processing without terminating the gateway process or its existing sockets.
+
+**Post-check**
+
+- What coupling would cause parser failure to drop every socket?
+- Why is the temporary scale reverted through Argo rather than another imperative command?
+- Which retry limit prevents a parser outage from becoming an unbounded queue?
+
+---
+
+### Activity M03.9 — Verify the graceful-drain contract (~15 min)
+
+**Pre-check**
+
+- In what order do readiness removal, `preStop`, `SIGTERM`, and grace-period expiry occur?
+- Why is a PDB not a socket-draining mechanism?
+- What should `/readyz` return after drain begins?
+
+**Do**
+
+1. Inspect the gateway pod lifecycle, readiness probe, PDB, and `terminationGracePeriodSeconds`. **Confirm:** record each configured value. `[ ] CONFIRMED`
+2. Inspect the gateway readiness implementation. **Confirm:** identify the exact state transition that changes `/readyz` from success to failure during drain. `[ ] CONFIRMED`
+3. Trace `preStop` `/drain` → `GatewayMain.beginDrain()` → `GatewayMain.awaitDrained()` and compare the 110-second drain timeout with the 120-second pod grace period. **Confirm:** the grace period exceeds the application drain timeout. `[ ] CONFIRMED`
+4. Start sustained sockets in dev, then delete one gateway pod normally. **Confirm:** the pod becomes not-ready before process exit and displaced clients reconnect within the target. `[ ] CONFIRMED`
+5. Wait for the replacement pod and a stable 60-second baseline. **Confirm:** save readiness and socket evidence. `[ ] CONFIRMED`
+
+**Validation** — evidence shows traffic removal before process exit, bounded reconnection, and complete recovery.
+
+**Post-check**
+
+- What breaks if readiness remains successful during `preStop`?
+- What breaks if the grace period is shorter than the drain timeout?
+- Which part must be implemented in application code rather than only YAML?
 
 ---
 
@@ -688,10 +840,11 @@ The apps under [`apps/`](apps/) are **mocks** — see [LAB-GUIDE.md § The apps 
 
 **Do**
 
-1. CI runs the socket-soak job against canary for ~5 min.
-2. On green, CI auto-opens a PR that bumps `k8s/overlays/prod/kustomization.yaml`.
+1. Open the workflow run and wait for the socket-soak job to finish. **Confirm:** `gh run view <run-id> --json conclusion --jq .conclusion` returns `success`. `[ ] CONFIRMED`
+2. Inspect the soak evidence. **Confirm:** socket success, P99 latency, and parser error rate each meet the SLO; record all three values. `[ ] CONFIRMED`
+3. Verify the prod-bump PR was created only after steps 1–2 passed. **Confirm:** the PR changes only the intended production image reference and includes the soak evidence. `[ ] CONFIRMED`
 
-**Validation** — prod-bump PR is open and awaiting approval.
+**Validation** — the soak passed, three SLO values are recorded, and the narrowly scoped prod-bump PR is awaiting approval.
 
 **Post-check**
 
@@ -787,14 +940,10 @@ The apps under [`apps/`](apps/) are **mocks** — see [LAB-GUIDE.md § The apps 
 
 **Do**
 
-1. Confirm `kubectl -n messaging-prod get pdb` shows a parser PDB allowing 1 disruption.
-2. Kill parser pods in a loop:
-
-   ```bash
-   while true; do kubectl -n messaging-prod delete pod -l app=parser-cpp --field-selector status.phase=Running | head -1; sleep 5; done
-   ```
-
-3. Watch all three panes for 2 minutes.
+1. Run `kubectl -n messaging-prod get pdb parser-cpp`. **Confirm:** `ALLOWED DISRUPTIONS` is at least `1` and the baseline has been steady for 60 seconds. `[ ] CONFIRMED`
+2. Record the name of one ready parser pod, then delete only that pod with `--wait=false`. **Confirm:** a replacement becomes ready and P99 remains under the SLO. `[ ] CONFIRMED — kill 1/3]`
+3. Repeat step 2 for a second pod. Do not use a loop. **Confirm:** session success still meets the SLO. `[ ] CONFIRMED — kill 2/3]`
+4. Repeat step 2 once more. **Confirm:** all parser replicas recover and all three observability panes are still updating. `[ ] CONFIRMED — kill 3/3]`
 
 **Validation** — session success stays at SLO; P99 RTT shows micro-bumps but stays under target.
 
@@ -816,10 +965,11 @@ The apps under [`apps/`](apps/) are **mocks** — see [LAB-GUIDE.md § The apps 
 
 **Do**
 
-1. `kubectl -n messaging-prod delete pdb parser-cpp`.
-2. Keep the kill loop running for 60 s.
-3. Watch SLO break in Grafana.
-4. **Restore** the PDB by re-syncing from Git (`argocd app sync ring-prod`).
+1. **CHANGE GATE:** show your partner that baseline traffic is healthy and the Git manifest still contains the parser PDB. `[ ] CONFIRMED`
+2. Run `kubectl -n messaging-prod delete pdb parser-cpp`. **Confirm:** `kubectl get pdb parser-cpp` returns `NotFound`. `[ ] CONFIRMED`
+3. Delete one parser pod at a time until the agreed failure signal appears. After each deletion, stop and record session success and P99. `[ ] CONFIRMED — failure observed]`
+4. **RECOVERY GATE:** re-sync `ring-prod` from Git. **Confirm:** `kubectl -n messaging-prod get pdb parser-cpp` shows the expected `minAvailable` and an allowed disruption. `[ ] CONFIRMED`
+5. Wait for the original SLO to hold for 60 seconds. **Confirm:** all parser replicas are ready before continuing. `[ ] CONFIRMED`
 
 **Validation** — SLO broke when PDB was gone; SLO recovers after the PDB is restored.
 
@@ -841,10 +991,12 @@ The apps under [`apps/`](apps/) are **mocks** — see [LAB-GUIDE.md § The apps 
 
 **Do**
 
-1. Push `parser-cpp:bad` to ACR (or use a pre-built tag from the trainer).
-2. Hand-edit `k8s/overlays/prod/kustomization.yaml` to point at `:bad`, commit, sync (yes, this is on purpose — you are the chaos).
-3. Watch SLO break.
-4. **Rollback** via Argo UI to the previous sync revision.
+1. Push `parser-cpp:bad` to ACR (or use a pre-built tag from the trainer). **Confirm:** the tag exists and you have recorded the last known-good Git revision. `[ ] CONFIRMED`
+2. **CHANGE GATE:** ask the trainer to confirm that this is the isolated lab production ring and that the previous Argo revision is available. `[ ] CONFIRMED`
+3. Change only the production parser tag to `:bad`, commit, push, and sync. **Confirm:** Argo reports the new revision before you start the timer. `[ ] CONFIRMED`
+4. When parser errors exceed 10% or the agreed SLO threshold, record the timestamp and begin rollback. `[ ] CONFIRMED — rollback timer started]`
+5. Roll back via Argo UI to the previous revision. **Confirm:** the last known-good image is running and the SLO is healthy for 60 seconds. `[ ] CONFIRMED — rollback timer stopped]`
+6. **RECOVERY GATE:** revert the bad Git commit with a normal revert commit and push it. Do not force-push shared history. **Confirm:** Git and Argo show the same desired revision. `[ ] CONFIRMED`
 
 **Validation** — rollback completes in under 2 minutes; record the actual.
 
@@ -866,9 +1018,11 @@ The apps under [`apps/`](apps/) are **mocks** — see [LAB-GUIDE.md § The apps 
 
 **Do**
 
-1. Inspect [`chaos/zone-failure-experiment.bicep`](chaos/zone-failure-experiment.bicep) to understand the blast radius.
-2. Trigger the experiment (per module README) targeting one zone's nodes.
-3. Watch panes: pods evict, sessions reconnect, RTT spikes briefly.
+1. Inspect [`chaos/zone-failure-experiment.bicep`](chaos/zone-failure-experiment.bicep). **Confirm:** name the target zone, namespace, duration, and recovery action to your partner. `[ ] CONFIRMED`
+2. **CHANGE GATE:** verify ready gateway pods exist in at least two other zones and surviving capacity can carry the test load. `[ ] CONFIRMED`
+3. Trigger the experiment for one zone. **Confirm:** only the intended zone is affected. `[ ] CONFIRMED`
+4. Measure reconnects. **Confirm:** at least 99% of displaced sockets reconnect within 30 seconds; record the actual. `[ ] CONFIRMED`
+5. **RECOVERY GATE:** cancel or complete the experiment. **Confirm:** gateway pods return to the expected zone spread and the SLO is stable for 60 seconds. `[ ] CONFIRMED`
 
 **Validation** — ≥99% of sockets reconnect within 30 s; SLO holds within 60 s of impact.
 
@@ -984,9 +1138,13 @@ The apps under [`apps/`](apps/) are **mocks** — see [LAB-GUIDE.md § The apps 
 
 **Do**
 
-1. Swap the messaging DNS A record from primary NLB → secondary NLB.
-2. Promote the Postgres geo-replica in the secondary region.
-3. Watch all panes.
+1. **CHANGE GATE:** have a partner or trainer verify all four preconditions: secondary Argo is `Synced` + `Healthy`, secondary gateway pods are ready, Postgres lag is under 5 seconds, and the socket baseline has been steady for 60 seconds. `[ ] CONFIRMED — 4/4 preconditions]`
+2. Read and record the current DNS A record and TTL. **Confirm:** it points to the primary NLB and TTL is 30 seconds. `[ ] CONFIRMED`
+3. Recheck Postgres lag immediately before promotion. If it is 5 seconds or more, stop. **Confirm:** record the observed lag and timestamp. `[ ] CONFIRMED`
+4. Quiesce new journal writes using the trainer-provided application control, then wait for replica lag to reach the agreed threshold. **Confirm:** no new primary writes are accepted. `[ ] CONFIRMED`
+5. Promote the Postgres geo-replica in the secondary region. **Confirm:** the secondary accepts a test write and the former primary is not accepting application writes. `[ ] CONFIRMED`
+6. Swap the messaging DNS A record from the primary NLB to the secondary NLB and start the RTO timer. **Confirm:** a fresh DNS lookup returns the secondary address. `[ ] CONFIRMED`
+7. Watch all three panes until at least 99% of sockets have reconnected. **Confirm:** stop the timer and record the timestamp. `[ ] CONFIRMED`
 
 **Validation** — sockets reconnect to the secondary within DNS TTL + client retry window; new writes succeed against the promoted replica.
 
@@ -1033,9 +1191,13 @@ The apps under [`apps/`](apps/) are **mocks** — see [LAB-GUIDE.md § The apps 
 
 **Do**
 
-1. Re-establish replication primary ← secondary (per module README).
-2. Wait for replica lag to converge.
-3. DNS swap back, **slowly drain** sockets from secondary first.
+1. **CHANGE GATE:** confirm the secondary has served healthy traffic for at least 5 minutes and you have a tested rollback point. `[ ] CONFIRMED`
+2. Re-establish replication from the active secondary to the recovering primary. **Confirm:** replication reports healthy in the correct direction. `[ ] CONFIRMED`
+3. Wait for lag to fall below 5 seconds and remain there for 60 seconds. **Confirm:** record the lag and timestamp. `[ ] CONFIRMED`
+4. Pre-scale the primary gateway to the pre-failover replica count. **Confirm:** all primary gateway pods are ready before traffic moves. `[ ] CONFIRMED`
+5. Quiesce writes, let lag converge, and promote the primary back to read-write. **Confirm:** a test write succeeds on primary and the secondary is no longer accepting application writes. `[ ] CONFIRMED`
+6. Swap DNS back to primary. **Confirm:** a fresh lookup returns the primary address and sockets reconnect without exceeding the SLO. `[ ] CONFIRMED`
+7. **RECOVERY GATE:** verify one writable Postgres server, healthy replication posture, expected gateway zone spread, and a stable 60-second traffic baseline. `[ ] CONFIRMED — 4/4 recovery checks]`
 
 **Validation** — no split-brain in Postgres; no socket avalanche on the primary; SLO holds throughout.
 
@@ -1061,9 +1223,11 @@ The apps under [`apps/`](apps/) are **mocks** — see [LAB-GUIDE.md § The apps 
 
 **Do**
 
-1. Enable a spot user pool on the primary cluster (Terraform variable change → apply).
-2. Add the spot toleration to the parser batch reconciler Deployment (the *batch* one, not the live serving Deployment).
-3. Watch pods land on spot nodes.
+1. Run a Terraform plan with the spot-pool variable enabled. **Confirm:** the plan adds a spot user pool and does not replace the cluster or a gateway node pool. `[ ] CONFIRMED`
+2. **CHANGE GATE:** show the plan to your partner or trainer, then apply it. **Confirm:** the new node pool reports `Succeeded`. `[ ] CONFIRMED`
+3. Inspect the new node label `kubernetes.azure.com/scalesetpriority`. **Confirm:** at least one ready node has value `spot`. `[ ] CONFIRMED`
+4. Create or update only the separate `parser-cpp-batch` Deployment with the spot toleration and node selector. **Confirm:** the live `parser-cpp` serving Deployment remains unchanged. `[ ] CONFIRMED`
+5. Apply or sync the batch Deployment. **Confirm:** its pods land on spot nodes and the synchronous parser pods remain on regular nodes. `[ ] CONFIRMED`
 
 **Validation** — `kubectl -n messaging-prod get pods -o wide` shows batch pods on spot nodes.
 
@@ -1085,9 +1249,12 @@ The apps under [`apps/`](apps/) are **mocks** — see [LAB-GUIDE.md § The apps 
 
 **Do**
 
-1. Install KEDA (or confirm already installed via Terraform).
-2. Apply a `ScaledObject` for `parser-cpp` driven by a Prometheus query (e.g., requests-per-second on the parser HTTP endpoint).
-3. Watch parser scale down to 0 when traffic stops; scale up on load.
+1. Install KEDA, or inspect the existing installation. **Confirm:** the operator and metrics API server deployments are available before creating a `ScaledObject`. `[ ] CONFIRMED`
+2. Run the proposed Prometheus query directly. **Confirm:** it returns a numeric value for the target namespace; do not continue with an empty query result. `[ ] CONFIRMED`
+3. Apply the `ScaledObject` to the retry-safe parser workload selected by the trainer. **Confirm:** `kubectl describe scaledobject` reports `Ready=True` and `Active` has a value. `[ ] CONFIRMED`
+4. Stop test traffic and wait through the cooldown period. **Confirm:** the target reaches zero replicas. `[ ] CONFIRMED`
+5. Start one controlled traffic burst. **Confirm:** the target scales above zero and serves requests within the cold-start SLO. `[ ] CONFIRMED`
+6. Stop traffic again. **Confirm:** the workload returns to zero and no gateway sockets are disrupted. `[ ] CONFIRMED`
 
 **Validation** — parser pods go to 0 with no traffic; come back online within the SLO when smoke resumes.
 
@@ -1109,9 +1276,13 @@ The apps under [`apps/`](apps/) are **mocks** — see [LAB-GUIDE.md § The apps 
 
 **Do**
 
-1. From Grafana, find gateway-java's P95 CPU and memory over the last hour.
-2. Update requests in `k8s/overlays/prod/kustomization.yaml` (or patch) to match P95 + safety margin.
-3. Roll out **without** dropping sockets — use a `PreStop` hook + drain pattern (per module README).
+1. From Grafana, record `gateway-java` P95 CPU and memory over the last hour. **Confirm:** the range includes sustained workshop load rather than an idle hour. `[ ] CONFIRMED`
+2. Calculate proposed requests as the observed P95 plus the cohort's safety margin. **Confirm:** record the old value, P95, margin, and proposed value with units. `[ ] CONFIRMED`
+3. Inspect the gateway lifecycle, readiness endpoint, PDB, and termination grace. **Confirm:** readiness changes to not-ready during drain and the grace period exceeds the intended drain time. If either condition is false, stop and complete the drain-readiness exercise in the module before rollout. `[ ] CONFIRMED`
+4. Update only the gateway requests and render the production overlay. **Confirm:** the diff contains the intended CPU and memory changes only. `[ ] CONFIRMED`
+5. **CHANGE GATE:** start sustained socket load and record the baseline connection count, then commit and sync. `[ ] CONFIRMED`
+6. Observe each StatefulSet pod replacement. **Confirm:** each old pod becomes not-ready before exit, its replacement becomes ready, and active sockets do not fall below the agreed threshold. `[ ] CONFIRMED — all replicas rolled]`
+7. **RECOVERY GATE:** verify the new requests on every gateway pod and a stable 60-second SLO window. `[ ] CONFIRMED`
 
 **Validation** — baseline session count holds throughout the rollout; new pods have new requests; no spike in reconnect.
 

@@ -96,6 +96,8 @@ The **Trainer Guide** drives any of the three from the same content.
 ├── SCENARIO.md                        # the legacy → target system brief
 ├── TRAINER-GUIDE.md                   # facilitator runbook (timing, talk tracks, demo cues)
 ├── LAB-GUIDE.md                       # participant walkthrough (mirrors trainer agenda)
+├── LAB-GUIDE-ACTIVITIES.md            # one-action-at-a-time labs with confirmation gates
+├── LAB-COVERAGE-MAP.md                # reading/concept/scenario → hands-on evidence map
 ├── prerequisites.md                   # what each participant installs/provisions before day 1
 ├── modules/                           # one folder per module with the lab steps
 │   ├── appendix-a-intro-to-aks/       # L200 primer: containers → Kubernetes → AKS (prerequisite)

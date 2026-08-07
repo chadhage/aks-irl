@@ -36,55 +36,20 @@ Two ideas to lead with:
 
 ## 6. Participant steps
 
-### 6.1 Bootstrap Argo CD on the secondary cluster
-Same as M03, against the secondary cluster name & RG. Verify `messaging-canary` and `messaging-prod` are running v1 with synthetic sockets idle (no live traffic yet).
+Use Activities **M07.1–M07.6** in [LAB-GUIDE-ACTIVITIES.md](../../LAB-GUIDE-ACTIVITIES.md). Database promotion and DNS changes are shared-state operations: complete one action, capture its evidence, and stop if its confirmation fails.
 
-### 6.2 Confirm Postgres geo-replica health
-```bash
-az postgres flexible-server replica list -g $RG_PRIMARY --name $PG_PRIMARY -o table
-# lag should be < 5 s
-```
+1. Bootstrap and validate the secondary GitOps controller.
+2. Record replica lag below 5 seconds with a timestamp.
+3. Establish a stable sustained-socket baseline.
+4. Pass all four failover preconditions, quiesce writes, promote one database writer, then change DNS.
+5. Calculate RTO and RPO with units and method.
+6. Re-establish replication, pre-scale primary, converge lag, promote one writer, and only then change DNS back.
 
-### 6.3 Start sustained load against the primary
-```bash
-./scripts/smoke.sh tcp $NLB_PRIMARY 4561 500 --keep-alive &
-```
-Let it run 5 min; confirm steady RTT in Grafana.
+Do not combine database promotion and DNS updates into one command block. The drill is complete only when exactly one Postgres server accepts application writes and the traffic baseline is stable for 60 seconds.
 
-### 6.4 Surgical failover — swap the DNS record
-You created `messaging.<lab>.example.com` in M03 pointing at `$NLB_PRIMARY`. Swap it to `$NLB_SECONDARY`:
-```bash
-az network dns record-set a update -g $DNS_RG -z $DNS_ZONE -n messaging \
-  --set 'aRecords=[{"ipv4Address":"'$NLB_SECONDARY'"}]' --ttl 30
-```
-Start a stopwatch. Wait for displaced sockets to reconnect (your generator's clients try every 5 s).
+### Optional brutal failover
 
-**Promote the Postgres replica:**
-```bash
-az postgres flexible-server replica promote -g $RG_SECONDARY --name $PG_SECONDARY
-```
-
-### 6.5 Measure RTO and RPO
-- **RTO:** seconds from DNS swap to "≥ 99 % of expected sockets are connected on secondary"
-- **RPO:** messages produced on primary in the last `replication_lag` seconds — count from the generator's local log
-
-### 6.6 (Optional) Brutal failover
-```bash
-az aks stop -g $RG_PRIMARY -n $AKS_PRIMARY
-```
-Watch what changes — TCP `RST` vs graceful close changes how fast clients reconnect.
-
-### 6.7 Recover
-1. Drain replication lag (now reversed): wait until secondary→primary lag is < 5 s.
-2. Promote primary back to read-write.
-3. Swap DNS back to `$NLB_PRIMARY`.
-4. Monitor that the primary does not "cold-start storm" — HPA may need to scale gateway up before the swap.
-
-### 6.8 Document
-Write `modules/07-extrinsic-outage/incident-region.md`:
-- Observed RTO / RPO
-- What surprised you
-- What you would change to halve the RTO
+Run `az aks stop` only when the trainer confirms the secondary is serving 100% of traffic, the regional failover recovery gate has passed, and at least 10 minutes remain to restart and validate the primary. Record the cluster state before stopping it. Recovery requires `az aks start`, ready nodes, healthy Argo applications, and no traffic move until the normal preconditions pass again.
 
 ## 7. Validation
 

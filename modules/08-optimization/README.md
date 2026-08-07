@@ -33,49 +33,13 @@ Once the customer has the platform running and trusted, the next conversation is
 
 ## 6. Participant steps
 
-### 6.1 Right-size gateway requests
-Open Grafana → workloads namespace `messaging-prod`. Find the P95 actual CPU and memory of `gateway-java` over the last hour of sustained load.
+Use Activities **M08.1–M08.3** in [LAB-GUIDE-ACTIVITIES.md](../../LAB-GUIDE-ACTIVITIES.md). Complete and confirm each optimization independently so one change cannot hide another change's impact.
 
-Edit `k8s/base/gateway-java.yaml` `resources.requests` to match (round up sensibly). Commit. Watch Argo roll the StatefulSet:
-```bash
-kubectl -n messaging-prod get sts gateway-java -w
-# Run smoke.sh in parallel — sessions should NOT drop below baseline
-```
+1. **Spot:** review a no-replacement Terraform plan, create the pool, verify its labels, and schedule only the batch parser workload there.
+2. **KEDA:** prove the controller is ready and the Prometheus query returns data before applying a `ScaledObject`; observe a complete `0 → N → 0` cycle.
+3. **Right-sizing:** record P95 and the safety-margin calculation, prove the gateway drain contract, make a resource-only diff, and watch every StatefulSet replacement under sustained sockets.
 
-### 6.2 Move parser-cpp's batch reconciler to spot
-Add a spot node pool via Terraform (`enable_spot_pool = true`). Add a separate Deployment `parser-cpp-batch` with:
-```yaml
-tolerations:
-  - key: "kubernetes.azure.com/scalesetpriority"
-    operator: "Equal"
-    value: "spot"
-    effect: "NoSchedule"
-nodeSelector:
-  "kubernetes.azure.com/scalesetpriority": spot
-```
-Keep the synchronous request path on the regular pool.
-
-### 6.3 Add KEDA for the parser
-Install KEDA via Helm (one-time, cluster-wide). Then:
-```yaml
-apiVersion: keda.sh/v1alpha1
-kind: ScaledObject
-metadata: { name: parser-cpp, namespace: messaging-prod }
-spec:
-  scaleTargetRef: { name: parser-cpp }
-  minReplicaCount: 0
-  maxReplicaCount: 20
-  pollingInterval: 15
-  cooldownPeriod: 120
-  triggers:
-    - type: prometheus
-      metadata:
-        serverAddress: http://managed-prom.example
-        metricName: parser_pending
-        query: sum(rate(parser_decoded_total[1m]))
-        threshold: "100"
-```
-Run a burst of `smoke.sh` and watch parser scale 0 → N → 0.
+The live parser request path and socket gateway must remain on regular nodes. Do not proceed with the right-size rollout unless you have verified the repository's `/drain` endpoint, readiness transition, 110-second application drain timeout, and 120-second pod grace period.
 
 ### 6.4 Cost-saving snippet for breaks
 Park user node pools without destroying anything:

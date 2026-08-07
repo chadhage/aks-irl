@@ -20,6 +20,10 @@ Read [Terminology](README.md#terminology--read-this-first) before going further.
 
 ## How to use this guide
 
+Use [LAB-GUIDE-ACTIVITIES.md](LAB-GUIDE-ACTIVITIES.md) for the executable, one-action-at-a-time instructions. This guide is the workshop map; the activity guide is the canonical participant runbook. [LAB-COVERAGE-MAP.md](LAB-COVERAGE-MAP.md) shows which activity complements every reading, scenario, and major concept.
+
+In the activity guide, do not continue past a numbered action until its **Confirm** statement passes and you mark `[ ] CONFIRMED`. A **CHANGE GATE** requires partner or trainer approval before changing shared state. A **RECOVERY GATE** must pass before the activity is complete.
+
 When the trainer announces a module:
 
 1. Open that module's README; keep this guide in another window for the cross-module map.
