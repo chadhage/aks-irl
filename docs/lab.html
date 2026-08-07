@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Lab Guide — Replatforming a Real-Time Messaging System to AKS</title>
-  <meta name="description" content="Step-by-step lab: 45 activities across 6 phases, for self-paced or instructor-led delivery, with progress tracking." />
+  <meta name="description" content="Step-by-step AKS lab with progress tracking, points, levels, achievements, and confirmation-gated activities." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -51,10 +51,26 @@
       <div class="lab-progress">
         <div class="lab-progress-top">
           <span id="progress-label">0 / 0 done</span>
-          <button id="reset-progress" class="link-btn" title="Clear saved progress">Reset</button>
+          <button id="reset-progress" class="link-btn" title="Clear saved progress and start over">Start over</button>
         </div>
-        <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+        <div class="progress-track" role="progressbar" aria-label="Lab completion" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="progress-fill" id="progress-fill"></div></div>
       </div>
+
+      <section class="score-panel" aria-labelledby="score-title">
+        <div class="score-topline">
+          <span class="score-kicker" id="score-title">Workshop score</span>
+          <span class="score-points"><strong id="score-value">0</strong> XP</span>
+        </div>
+        <div class="score-level-row">
+          <span class="score-level" id="score-level">Explorer</span>
+          <span class="score-next" id="score-next">500 XP to next level</span>
+        </div>
+        <div class="level-track" role="progressbar" aria-label="Level progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <div class="level-fill" id="level-fill"></div>
+        </div>
+        <p class="score-rules"><strong>+100 XP</strong> per activity · <strong>+250 XP</strong> per completed phase</p>
+        <div class="achievement-list" id="achievement-list" aria-label="Achievements"></div>
+      </section>
 
       <nav class="lab-toc" id="lab-toc" aria-label="Phases"></nav>
 
@@ -90,6 +106,19 @@
     </div>
   </main>
 
+  <dialog class="reset-dialog" id="reset-dialog" aria-labelledby="reset-title">
+    <form method="dialog">
+      <span class="dialog-icon" aria-hidden="true">↺</span>
+      <h2 id="reset-title">Start the workshop over?</h2>
+      <p>This clears every completed activity, point, level, and achievement saved in this browser. This cannot be undone.</p>
+      <div class="dialog-actions">
+        <button type="submit" class="btn btn-ghost" value="cancel">Keep progress</button>
+        <button type="submit" class="btn btn-danger" id="confirm-reset" value="confirm">Reset progress</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="score-toast" id="score-toast" role="status" aria-live="polite" aria-atomic="true"></div>
   <button class="to-top" id="to-top" aria-label="Back to top">↑</button>
 
   <script src="lab-data.js"></script>
