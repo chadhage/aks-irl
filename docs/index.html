@@ -17,18 +17,15 @@
     <nav class="nav" aria-label="Primary">
       <a class="brand" href="#top">
         <span class="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 32 32" width="28" height="28" fill="none">
-            <path d="M16 2 4 9v14l12 7 12-7V9L16 2Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
-            <path d="M16 9.5 9.5 13v6L16 22.5 22.5 19v-6L16 9.5Z" fill="currentColor" opacity=".18"/>
-            <path d="M16 9.5 9.5 13v6L16 22.5 22.5 19v-6L16 9.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
-          </svg>
+          <img src="https://www.azureicons.com/static/images/icons/Compute/svg/Kubernetes-Services.svg" alt="" />
         </span>
         <span class="brand-text">Skybridge&nbsp;→&nbsp;AKS</span>
       </a>
-      <button class="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Toggle navigation">
+      <button class="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Open navigation">
         <span></span><span></span><span></span>
       </button>
-      <ul class="nav-links" id="nav-links">
+      <ul class="nav-links" id="nav-links" aria-hidden="true" inert>
+        <li class="drawer-label">Navigation</li>
         <li><a href="#scenario">Scenario</a></li>
         <li><a href="#architecture">Architecture</a></li>
         <li><a href="#modules">Modules</a></li>
@@ -39,6 +36,7 @@
         <li><a class="nav-cta" href="https://github.com/chadhage/aks-irl" target="_blank" rel="noopener">Repo ↗</a></li>
       </ul>
     </nav>
+    <div class="nav-backdrop" aria-hidden="true"></div>
   </header>
 
   <main id="main">
@@ -562,12 +560,15 @@ flowchart TB
           </tbody>
         </table>
       </div>
-      <blockquote class="success-quote">
-        “If we connect a single non-production client partner to this MVP next Monday, it stays up for a full week of
-        peak-hours traffic, we can ship a parser rule change to canary without a maintenance window, and a
-        planned zone failure doesn't make the on-call phone ring.”
-        <cite>— the customer's bar for success</cite>
-      </blockquote>
+      <aside class="success-criteria" aria-labelledby="pilot-criteria-title">
+        <h3 id="pilot-criteria-title">Pilot acceptance criteria</h3>
+        <ul>
+          <li>Connect one non-production client partner to the MVP.</li>
+          <li>Operate for seven consecutive days during defined peak-hour test windows.</li>
+          <li>Promote a parser rule through canary without a planned service interruption.</li>
+          <li>Complete a planned zone-failure test while remaining within the listed SLOs.</li>
+        </ul>
+      </aside>
     </section>
 
     <!-- DELIVERY -->
@@ -678,6 +679,7 @@ kubectl expose deployment web --port=80 --type=LoadBalancer</code></pre>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script src="nav.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

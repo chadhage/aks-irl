@@ -126,45 +126,6 @@ chips.forEach((chip) => {
   });
 });
 
-// ---------- Responsive nav (collapse to hamburger when links would overflow) ----------
-const nav = document.querySelector(".nav");
-const navToggle = document.querySelector(".nav-toggle");
-const navLinks = document.getElementById("nav-links");
-
-function closeNav() {
-  if (!navLinks || !navToggle) return;
-  navLinks.classList.remove("is-open");
-  navToggle.setAttribute("aria-expanded", "false");
-}
-
-// Expand to natural layout, measure real content width, then collapse only if it overflows.
-function fitNav() {
-  if (!nav || !navLinks) return;
-  nav.classList.remove("is-collapsed");
-  const overflowing = nav.scrollWidth > nav.clientWidth + 1;
-  if (overflowing) {
-    nav.classList.add("is-collapsed");
-  } else {
-    closeNav();
-  }
-}
-
-if (nav && navToggle && navLinks) {
-  navToggle.addEventListener("click", () => {
-    const open = navLinks.classList.toggle("is-open");
-    navToggle.setAttribute("aria-expanded", String(open));
-  });
-  navLinks.querySelectorAll("a").forEach((a) => a.addEventListener("click", closeNav));
-
-  let navRaf = 0;
-  window.addEventListener("resize", () => {
-    cancelAnimationFrame(navRaf);
-    navRaf = requestAnimationFrame(fitNav);
-  });
-  fitNav();
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitNav);
-}
-
 // ---------- Theme toggle ----------
 const themeToggle = document.getElementById("theme-toggle");
 const root = document.documentElement;
@@ -212,7 +173,7 @@ if ("IntersectionObserver" in window) {
   );
   // tag sections + cards for reveal
   document
-    .querySelectorAll(".section-head, .scenario-grid, .legacy-target, .diagram-wrap, .move, .delivery-card, .role, .success-quote, .table-wrap")
+    .querySelectorAll(".section-head, .scenario-grid, .legacy-target, .diagram-wrap, .move, .delivery-card, .role, .success-criteria, .table-wrap")
     .forEach((el) => el.classList.add("reveal"));
   revealEls().forEach((el) => io.observe(el));
 } else {

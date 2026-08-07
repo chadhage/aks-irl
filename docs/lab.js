@@ -201,16 +201,6 @@
     }
   });
 
-  // mobile nav
-  const navToggle = document.querySelector(".nav-toggle");
-  const navLinks = document.getElementById("nav-links");
-  if (navToggle && navLinks) {
-    navToggle.addEventListener("click", () => {
-      const open = navLinks.classList.toggle("is-open");
-      navToggle.setAttribute("aria-expanded", String(open));
-    });
-  }
-
   // back to top + active TOC on scroll
   const toTop = document.getElementById("to-top");
   window.addEventListener("scroll", () => {
