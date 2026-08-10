@@ -60,12 +60,17 @@ Commit and push.
 
 ### 6.3 Bootstrap Argo CD
 ```bash
-az aks command invoke -g $RG -n $AKS --command "kubectl create namespace argocd"
-az aks command invoke -g $RG -n $AKS --command "
-  kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v2.12.4/manifests/install.yaml
-"
+az extension add --name k8s-extension
+az provider register --namespace Microsoft.KubernetesConfiguration --wait
+az k8s-extension create \
+  --resource-group "$RG" \
+  --cluster-name "$AKS" \
+  --cluster-type managedClusters \
+  --name argocd \
+  --extension-type Microsoft.ArgoCD \
+  --config "redis-ha.enabled=false"
 ```
-Wait for `argocd-server` Ready. Then:
+This follows the [Microsoft Learn GitOps with Argo CD tutorial](https://learn.microsoft.com/azure/azure-arc/kubernetes/tutorial-use-gitops-argocd#create-gitops-argo-cd-extension-simple-installation). Wait for `argocd-server` Ready. Then:
 ```bash
 az aks command invoke -g $RG -n $AKS --command "kubectl apply -f /gitops/projects/messaging.yaml" --file gitops/projects/messaging.yaml
 az aks command invoke -g $RG -n $AKS --command "kubectl apply -f /gitops/apps/root.yaml" --file gitops/apps/root.yaml

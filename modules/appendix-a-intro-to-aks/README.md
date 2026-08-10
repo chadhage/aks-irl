@@ -292,6 +292,6 @@ Continue to [Module 00 — Envisioning & Architecture Decisions](../00-envisioni
 ### Go deeper (optional, still L200)
 
 - [What is a container? (Microsoft Learn)](https://learn.microsoft.com/dotnet/architecture/microservices/container-docker-introduction/)
-- [Kubernetes core concepts (kubernetes.io)](https://kubernetes.io/docs/concepts/overview/)
+- [Kubernetes core concepts for AKS (Microsoft Learn)](https://learn.microsoft.com/azure/aks/concepts-clusters-workloads)
 - [What is Azure Kubernetes Service? (Microsoft Learn)](https://learn.microsoft.com/azure/aks/what-is-aks)
 - [AKS Well-Architected service guide](https://learn.microsoft.com/azure/well-architected/service-guides/azure-kubernetes-service)

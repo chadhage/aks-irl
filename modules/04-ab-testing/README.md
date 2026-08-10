@@ -84,7 +84,7 @@ The gateway forwards the `x-cohort` header set by the client's `COHORT beta` com
 ACK should report `v2 fields=... priority=QU`. Default cohort hits v1.
 
 ### 6.5 Grafana split
-Open Grafana → import the dashboard from `https://grafana.com/grafana/dashboards/7639` (Prometheus stats) and add a panel:
+Open Grafana, follow the [Azure Managed Grafana dashboard guidance](https://learn.microsoft.com/azure/azure-monitor/visualize/grafana-kubernetes#create-a-new-kubernetes-dashboard) to create a Prometheus-backed dashboard, and add a panel:
 ```promql
 histogram_quantile(0.99, sum(rate(gateway_message_roundtrip_seconds_bucket[5m])) by (parser_version, le))
 ```

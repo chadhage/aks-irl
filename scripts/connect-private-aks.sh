@@ -20,5 +20,5 @@ az vm create -g "$RG" -n "$VM" --image Ubuntu2404 --size Standard_B2s \
   --subnet "$(az network vnet list -g "$RG" --query "[0].subnets[?contains(name,'snet-aks-nodes')].id" -o tsv)" \
   --public-ip-address ""
 az vm extension set -g "$RG" --vm-name "$VM" --name CustomScript --publisher Microsoft.Azure.Extensions \
-  --settings '{"commandToExecute":"curl -sSL https://get.docker.com | sh && curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /usr/share/keyrings/microsoft.gpg && echo deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/azure-cli noble main > /etc/apt/sources.list.d/azure-cli.list && apt-get update && apt-get install -y azure-cli kubectl jq"}'
+  --settings '{"commandToExecute":"curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /usr/share/keyrings/microsoft.gpg && echo deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/azure-cli noble main > /etc/apt/sources.list.d/azure-cli.list && apt-get update && apt-get install -y azure-cli docker.io kubectl jq"}'
 echo "Jumpbox $VM ready. Use: az network bastion ssh ..."

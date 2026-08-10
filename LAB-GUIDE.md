@@ -110,7 +110,7 @@ Walk the 9 Day-0 decisions as a cohort. Commit `modules/00-envisioning/adr-001-a
 [modules/03-mvp-go-live/README.md](modules/03-mvp-go-live/README.md)
 
 1. Build and push all three mock images as `:v1` to your ACR.
-2. Apply Argo CD (`kubectl apply -k gitops/bootstrap`); apply the root app.
+2. Install the Microsoft Argo CD cluster extension (see `gitops/bootstrap/README.md`); apply the root app.
 3. Replace every `REPLACE` placeholder in `gitops/` and `k8s/overlays/`. Commit + push.
 4. Watch `kubectl -n argocd get applications -w` until `ring-dev` + `ring-canary` are **Synced + Healthy**. `ring-prod` stays OutOfSync (by design).
 5. Smoke test:
@@ -308,5 +308,5 @@ terraform apply
   - [WAF — AKS service guide](https://learn.microsoft.com/azure/well-architected/service-guides/azure-kubernetes-service)
   - [WAF — Azure DB for PostgreSQL Flexible Server](https://learn.microsoft.com/azure/well-architected/service-guides/postgresql)
   - [AKS public roadmap](https://aka.ms/aks/roadmap)
-  - [Argo CD operator manual](https://argo-cd.readthedocs.io/en/stable/operator-manual/declarative-setup/)
-  - [Istio ambient mode](https://istio.io/latest/docs/ambient/overview/)
+  - [GitOps with Argo CD on AKS](https://learn.microsoft.com/azure/azure-arc/kubernetes/tutorial-use-gitops-argocd)
+  - [Istio-based service mesh add-on for AKS](https://learn.microsoft.com/azure/aks/istio-about)

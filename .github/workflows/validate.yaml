@@ -57,10 +57,7 @@ jobs:
         with:
           version: v1.30.10
       - name: Install kubeconform
-        run: |
-          curl -fsSLo kubeconform.tar.gz https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz
-          tar -xzf kubeconform.tar.gz
-          sudo install kubeconform /usr/local/bin/kubeconform
+        run: go install github.com/yannh/kubeconform/cmd/kubeconform@v0.6.7
       - name: Render and validate overlays
         run: |
           for overlay in dev canary prod; do
@@ -76,9 +73,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y shellcheck
-          curl -fsSLo actionlint.tar.gz https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz
-          tar -xzf actionlint.tar.gz
-          sudo install actionlint /usr/local/bin/actionlint
+          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
       - name: Validate workflows
         run: actionlint
       - name: Validate shell scripts

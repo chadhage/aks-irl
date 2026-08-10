@@ -131,9 +131,6 @@ const themeToggle = document.getElementById("theme-toggle");
 const root = document.documentElement;
 const stored = localStorage.getItem("sb-theme");
 if (stored === "light") root.setAttribute("data-theme", "light");
-function syncMermaidTheme() {
-  return root.getAttribute("data-theme") === "light" ? "default" : "dark";
-}
 if (themeToggle) {
   themeToggle.addEventListener("click", () => {
     const isLight = root.getAttribute("data-theme") === "light";
@@ -144,16 +141,6 @@ if (themeToggle) {
       root.setAttribute("data-theme", "light");
       localStorage.setItem("sb-theme", "light");
     }
-  });
-}
-
-// ---------- Mermaid ----------
-if (window.mermaid) {
-  mermaid.initialize({
-    startOnLoad: true,
-    theme: syncMermaidTheme(),
-    securityLevel: "strict",
-    flowchart: { curve: "basis", useMaxWidth: true },
   });
 }
 

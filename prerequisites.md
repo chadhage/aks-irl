@@ -81,8 +81,8 @@ az provider register --namespace Microsoft.Cdn
 
 Fork the repo in the GitHub UI, then clone your fork locally:
 ```bash
-git clone https://github.com/<your-user>/aks-briefing-with-labs.git
-cd aks-briefing-with-labs
+gh repo clone <your-user>/aks-irl
+cd aks-irl
 ```
 
 ## 4. Connectivity

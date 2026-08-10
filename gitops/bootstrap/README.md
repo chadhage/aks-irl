@@ -2,9 +2,18 @@
 
 Run **after** the cluster is up (Module 03) and before the GitOps lab steps.
 
+Install the [Microsoft Argo CD cluster extension](https://learn.microsoft.com/azure/azure-arc/kubernetes/tutorial-use-gitops-argocd#create-gitops-argo-cd-extension-simple-installation), then apply the project and root application:
+
 ```bash
-kubectl create namespace argocd
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v2.12.4/manifests/install.yaml
+az extension add --name k8s-extension
+az provider register --namespace Microsoft.KubernetesConfiguration --wait
+az k8s-extension create \
+	--resource-group "$RG" \
+	--cluster-name "$AKS" \
+	--cluster-type managedClusters \
+	--name argocd \
+	--extension-type Microsoft.ArgoCD \
+	--config "redis-ha.enabled=false"
 kubectl apply -f ../projects/messaging.yaml
 kubectl apply -f ../apps/root.yaml
 ```

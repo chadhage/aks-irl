@@ -15,8 +15,8 @@
   --radius-sm: 9px;
   --maxw: 1160px;
   --shadow: 0 18px 50px -20px rgba(0, 0, 0, 0.7);
-  --font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --mono: "JetBrains Mono", ui-monospace, "Cascadia Code", monospace;
+  --font: "Segoe UI", Aptos, Calibri, -apple-system, BlinkMacSystemFont, sans-serif;
+  --mono: Consolas, "Courier New", Courier, monospace;
 }
 
 [data-theme="light"] {
@@ -165,9 +165,6 @@ body.nav-drawer-open { overflow: hidden; }
 .architecture-view-head span { color: var(--brand); font: 600 0.72rem var(--mono); text-transform: uppercase; }
 .architecture-view-head h3 { margin-top: 0.35rem; font-size: 1.22rem; }
 .architecture-view-head p { max-width: 72ch; margin: 0.45rem 0 0; color: var(--text-dim); font-size: 0.9rem; }
-.diagram-wrap-mermaid { min-height: 280px; }
-.mermaid { display: flex; justify-content: center; min-width: 900px; min-height: 240px; }
-.diagram-note { min-width: 900px; max-width: 110ch; margin: 1rem auto 0; padding-top: 0.9rem; border-top: 1px solid var(--border); color: var(--text-dim); font-size: 0.78rem; text-align: center; }
 .azure-architecture { min-width: 900px; margin: 0; }
 .traffic-sources, .ingress-services { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.2rem; max-width: 660px; margin: 0 auto; }
 .external-node, .azure-node { min-width: 0; }
@@ -182,7 +179,7 @@ body.nav-drawer-open { overflow: hidden; }
 .azure-node { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.25rem; min-height: 112px; padding: 0.9rem; text-align: center; border: 1px solid color-mix(in srgb, var(--brand) 35%, var(--border)); border-radius: var(--radius-sm); background: color-mix(in srgb, var(--brand) 5%, var(--surface-2)); transition: border-color 0.15s, transform 0.15s; }
 .azure-node:hover { border-color: var(--brand); transform: translateY(-2px); }
 .azure-node:focus-visible { outline: 3px solid color-mix(in srgb, var(--brand) 60%, transparent); outline-offset: 3px; }
-.azure-node img { display: block; width: 44px; height: 44px; object-fit: contain; margin-bottom: 0.2rem; }
+.service-mark { display: block; width: 44px; height: 44px; object-fit: contain; margin-bottom: 0.2rem; }
 .azure-node strong { font-size: 0.88rem; line-height: 1.25; }
 .azure-node small { display: block; font-size: 0.72rem; }
 .regional-routes { display: grid; grid-template-columns: 1fr 1fr; max-width: 760px; height: 70px; margin: 0 auto; color: var(--text-mute); font: 0.7rem var(--mono); }
@@ -207,7 +204,7 @@ body.nav-drawer-open { overflow: hidden; }
 .standby-note { display: grid; place-items: center; min-height: 61px; margin: 0.75rem 0; border: 1px dashed var(--border); border-radius: 6px; color: var(--text-mute); font: 0.72rem var(--mono); }
 .region-dependencies { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.65rem; }
 .azure-node-compact { min-height: 105px; padding: 0.7rem; }
-.azure-node-compact img { width: 36px; height: 36px; }
+.azure-node-compact .service-mark { width: 36px; height: 36px; }
 .replication-path { display: grid; place-items: end center; position: relative; overflow: hidden; padding-bottom: 3.5rem; color: var(--text-mute); font: 0.64rem var(--mono); text-align: center; }
 .replication-path::before { content: ""; position: absolute; top: 74%; left: 7px; right: 7px; border-top: 2px dashed var(--warn); }
 .replication-path::after { content: ""; position: absolute; top: calc(74% - 5px); right: 0; border: 6px solid transparent; border-left-color: var(--warn); }
@@ -215,7 +212,7 @@ body.nav-drawer-open { overflow: hidden; }
 .shared-services { display: grid; grid-template-columns: auto repeat(3, minmax(0, 1fr)); gap: 0.75rem; align-items: center; margin-top: 1rem; padding: 1rem; border: 1px dashed var(--border); border-radius: var(--radius-sm); }
 .shared-label { color: var(--text-mute); font: 0.7rem var(--mono); text-transform: uppercase; writing-mode: vertical-rl; transform: rotate(180deg); }
 .azure-node-horizontal { min-height: 78px; flex-direction: row; justify-content: flex-start; gap: 0.75rem; text-align: left; }
-.azure-node-horizontal img { flex: 0 0 auto; margin: 0; }
+.azure-node-horizontal .service-mark { flex: 0 0 auto; margin: 0; }
 .azure-node-horizontal span { min-width: 0; }
 .azure-architecture figcaption { margin-top: 1rem; color: var(--text-mute); font-size: 0.75rem; text-align: center; }
 .azure-architecture figcaption a { color: var(--brand); text-decoration: underline; text-underline-offset: 3px; }
