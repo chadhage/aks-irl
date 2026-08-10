@@ -81,6 +81,8 @@ jobs:
         run: actionlint
       - name: Validate shell scripts
         run: shellcheck scripts/*.sh
+      - name: Validate hyperlinks
+        run: bash scripts/validate-links.sh
       - name: Reject unresolved production placeholders
         run: |
           if grep -RInE 'REPLACE_PROD_TAG|\.placeholder' k8s/overlays/prod infra/terraform; then
